@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Management System</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./assets/images/logo/logo.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/index.css">
+    
+    <!-- Utility Scripts -->
+    <script src="./js/util.js" defer></script>
+    <script src="./js/render.js" defer></script>
+    
+    <!-- Components -->
+    <script src="./js/components/header.js" defer></script>
+    <script src="./js/components/footer.js" defer></script>
+</head>
+<body>
+    <!-- Header Placeholder -->
+    <div id="header"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="wrapper">
+                <h2 class="role-heading">Select Your Role</h2>
+                <div class="role-buttons">
+                    <button 
+                        id="adminBtn" 
+                        class="role-btn"
+                        onclick="handleRoleSelection('admin')">
+                        Admin
+                    </button>
+                    <button 
+                        id="doctorBtn" 
+                        class="role-btn"
+                        onclick="handleRoleSelection('doctor')">
+                        Doctor
+                    </button>
+                    <button 
+                        id="patientBtn" 
+                        class="role-btn"
+                        onclick="handleRoleSelection('patient')">
+                        Patient
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Placeholder -->
+    <div id="footer"></div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Services -->
+    <script type="module" src="./js/services/index.js" defer></script>
+</body>
+</html>
