@@ -1,18 +1,16 @@
 package com.project.backend.models;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.time.LocalDateTime;
 
-@Entity
 @Document(collection = "prescriptions")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,19 +19,55 @@ import lombok.Setter;
 public class Prescription {
 
     @Id    
-    private Long id;
+    private String id;
+
+    @Indexed
     @NotNull
-    @Size(min = 3, max = 100, message = "Patient name must be between 3 and 100 characters")
+    private String appointmentId;
+
+    @Indexed
+    @NotNull
+    private String patientId;
+
+    @NotNull
+    private String doctorId;
+
+    @NotNull
+    @Size(min = 3, max = 100)
     private String patientName;
+
     @NotNull
-    private Long appointmentId;
-    @NotNull
-    @Size(min = 3, max = 100, message = "Medication name must be between 3 and 100 characters")
+    @Size(min = 3, max = 100)
     private String medication;
+
     @NotNull
-    @Size(min = 3, max = 100, message = "Dosage must be between 3 and 100 characters")
+    @Size(min = 3, max = 100)
     private String dosage;    
-    @Size(max = 200, message = "DoctorNotes must be less than 200 characters")
+
+    @Size(max = 200)
     private String doctorNotes;
-    
+
+    private LocalDateTime date;
+
+    private boolean active = true;
+
+    // Added indexes for common queries
+    @Indexed
+    private String status;
+
+    // Audit fields
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    // Lifecycle callbacks
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        updatedAt = now;
+        if (date == null) {
+            date = now;
+        }
+    }
 }

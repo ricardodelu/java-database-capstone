@@ -15,14 +15,15 @@
     <!-- CSS -->
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="stylesheet" href="./assets/css/index.css">
+    <link rel="stylesheet" href="./assets/css/modal.css">
     
     <!-- Utility Scripts -->
-    <script src="./js/util.js" defer></script>
-    <script src="./js/render.js" defer></script>
+    <script type="module" src="./js/util.js"></script>
+    <script type="module" src="./js/render.js"></script>
     
     <!-- Components -->
-    <script src="./js/components/header.js" defer></script>
-    <script src="./js/components/footer.js" defer></script>
+    <script type="module" src="./js/components/header.js"></script>
+    <script type="module" src="./js/components/footer.js"></script>
 </head>
 <body>
     <!-- Header Placeholder -->
@@ -36,20 +37,17 @@
                 <div class="role-buttons">
                     <button 
                         id="adminBtn" 
-                        class="role-btn"
-                        onclick="handleRoleSelection('admin')">
+                        class="role-btn">
                         Admin
                     </button>
                     <button 
                         id="doctorBtn" 
-                        class="role-btn"
-                        onclick="handleRoleSelection('doctor')">
+                        class="role-btn">
                         Doctor
                     </button>
                     <button 
                         id="patientBtn" 
-                        class="role-btn"
-                        onclick="handleRoleSelection('patient')">
+                        class="role-btn">
                         Patient
                     </button>
                 </div>
