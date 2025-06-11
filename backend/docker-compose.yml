@@ -1,12 +1,34 @@
 version: '3.8'
 
 services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: clinic_app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/cms
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATA_MONGODB_HOST=mongodb
+      - SPRING_DATA_MONGODB_PORT=27017
+      - SPRING_DATA_MONGODB_DATABASE=cms
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - clinic_network
+
   mysql:
     image: mysql:8.0
     container_name: clinic_mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: prefinaltest
+      MYSQL_DATABASE: cms
     ports:
       - "3306:3306"
     volumes:
@@ -24,7 +46,7 @@ services:
     image: mongo:latest
     container_name: clinic_mongodb
     environment:
-      MONGO_INITDB_DATABASE: prefinaltest
+      MONGO_INITDB_DATABASE: cms
     ports:
       - "27017:27017"
     volumes:

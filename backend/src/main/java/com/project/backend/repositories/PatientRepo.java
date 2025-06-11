@@ -18,10 +18,10 @@ public interface PatientRepo extends JpaRepository<Patient, Long> {
     /**
      * Find a patient by either email or phone number
      * @param email the email to search for
-     * @param phone the phone number to search for
+     * @param phoneNumber the phone number to search for
      * @return Optional containing the patient if found
      */
-    Optional<Patient> findByEmailOrPhone(String email, String phone);
+    Optional<Patient> findByEmailOrPhoneNumber(String email, String phoneNumber);
     
     /**
      * Check if a patient exists with the given email
@@ -32,9 +32,9 @@ public interface PatientRepo extends JpaRepository<Patient, Long> {
     
     /**
      * Check if a patient exists with the given phone number
-     * @param phone the phone number to check
+     * @param phoneNumber the phone number to check
      * @return true if a patient exists with this phone number
      */
-    boolean existsByPhone(String phone);
+    boolean existsByPhoneNumber(String phoneNumber);
 }
                                                                                                                                                          

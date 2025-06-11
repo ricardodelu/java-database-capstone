@@ -1,225 +1,147 @@
-export class DoctorCard {
-    constructor(doctor) {
-        this.doctor = doctor;
-        this.role = localStorage.getItem("userRole");
+// Doctor Card Component
+class DoctorCard extends HTMLElement {
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
     }
 
-    createCard() {
-        const card = document.createElement("div");
-        card.classList.add("doctor-card");
-        card.setAttribute("data-doctor-id", this.doctor.id);
-
-        // Add info section
-        const infoDiv = this.createInfoSection();
-        card.appendChild(infoDiv);
-
-        // Add actions section
-        const actionsDiv = this.createActionsSection();
-        card.appendChild(actionsDiv);
-
-        return card;
+    static get observedAttributes() {
+        return ['doctor'];
     }
 
-    createInfoSection() {
-        const infoDiv = document.createElement("div");
-        infoDiv.classList.add("doctor-info");
+    connectedCallback() {
+        this.render();
+    }
 
-        // Doctor name
-        const name = document.createElement("h3");
-        name.textContent = this.doctor.name;
-        name.classList.add("doctor-name");
-
-        // Specialization
-        const specialization = document.createElement("p");
-        specialization.textContent = this.doctor.specialization;
-        specialization.classList.add("doctor-specialization");
-
-        // Email if available
-        if (this.doctor.email) {
-            const email = document.createElement("p");
-            email.textContent = this.doctor.email;
-            email.classList.add("doctor-email");
-            infoDiv.appendChild(email);
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'doctor' && oldValue !== newValue) {
+            this.render();
         }
-
-        // Availability if provided
-        if (this.doctor.availability) {
-            const availability = document.createElement("p");
-            availability.textContent = `Available: ${this.doctor.availability.join(", ")}`;
-            availability.classList.add("doctor-availability");
-            infoDiv.appendChild(availability);
-        }
-
-        infoDiv.appendChild(name);
-        infoDiv.appendChild(specialization);
-
-        return infoDiv;
     }
 
-    createActionsSection() {
-        const actionsDiv = document.createElement("div");
-        actionsDiv.classList.add("card-actions");
-
-        // Add role-specific buttons
-        switch (this.role) {
-            case "admin":
-                this.addAdminButtons(actionsDiv);
-                break;
-            case "loggedPatient":
-                this.addPatientButtons(actionsDiv);
-                break;
-            case "patient":
-                this.addLoginPrompt(actionsDiv);
-                break;
-        }
-
-        return actionsDiv;
-    }
-
-    addAdminButtons(actionsDiv) {
-        // Edit button with confirmation
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.classList.add("btn-edit");
-        editBtn.onclick = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                if (!token) throw new Error("Authentication required");
-                
-                await this.handleEdit();
-            } catch (error) {
-                console.error("Edit failed:", error);
-                alert("Failed to edit doctor. Please try again.");
-            }
-        };
-
-        // Delete button with confirmation and token check
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.classList.add("btn-delete");
-        deleteBtn.onclick = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                if (!token) throw new Error("Authentication required");
-                
-                await this.handleDelete();
-            } catch (error) {
-                console.error("Delete failed:", error);
-                alert("Failed to delete doctor. Please try again.");
-            }
-        };
-
-        actionsDiv.appendChild(editBtn);
-        actionsDiv.appendChild(deleteBtn);
-    }
-
-    addPatientButtons(actionsDiv) {
-        const bookBtn = document.createElement("button");
-        bookBtn.textContent = "Book Appointment";
-        bookBtn.classList.add("btn-book");
-        bookBtn.onclick = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    this.handleLogin();
-                    return;
+    render() {
+        const doctor = JSON.parse(this.getAttribute('doctor') || '{}');
+        
+        this.shadowRoot.innerHTML = `
+            <style>
+                :host {
+                    display: block;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    padding: 20px;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
                 }
 
-                // Get patient data before showing booking form
-                const patientData = await this.getPatientData(token);
-                await this.handleBooking(patientData);
-            } catch (error) {
-                console.error("Booking failed:", error);
-                alert("Failed to book appointment. Please try again.");
-            }
-        };
-
-        // Add availability indicator
-        if (this.doctor.availability) {
-            const availabilityBadge = document.createElement("span");
-            availabilityBadge.classList.add("availability-badge");
-            availabilityBadge.textContent = this.doctor.isAvailable ? "Available" : "Busy";
-            actionsDiv.appendChild(availabilityBadge);
-        }
-
-        actionsDiv.appendChild(bookBtn);
-    }
-
-    addLoginPrompt(actionsDiv) {
-        const loginPrompt = document.createElement("p");
-        loginPrompt.textContent = "Please login to book appointments";
-        loginPrompt.classList.add("login-prompt");
-
-        const loginBtn = document.createElement("button");
-        loginBtn.textContent = "Login";
-        loginBtn.classList.add("btn-login");
-        loginBtn.onclick = () => this.handleLogin();
-
-        actionsDiv.appendChild(loginPrompt);
-        actionsDiv.appendChild(loginBtn);
-    }
-
-    // Enhanced event handlers
-    async handleEdit() {
-        if (!confirm(`Do you want to edit Dr. ${this.doctor.name}'s information?`)) {
-            return;
-        }
-
-        const event = new CustomEvent('editDoctor', {
-            detail: { 
-                doctorId: this.doctor.id,
-                doctorData: this.doctor
-            }
-        });
-        document.dispatchEvent(event);
-    }
-
-    async handleDelete() {
-        if (!confirm(`Are you sure you want to delete Dr. ${this.doctor.name}? This action cannot be undone.`)) {
-            return;
-        }
-
-        const event = new CustomEvent('deleteDoctor', {
-            detail: { 
-                doctorId: this.doctor.id,
-                doctorName: this.doctor.name
-            }
-        });
-        document.dispatchEvent(event);
-    }
-
-    async handleBooking(patientData) {
-        const event = new CustomEvent('bookAppointment', {
-            detail: { 
-                doctorId: this.doctor.id,
-                doctorName: this.doctor.name,
-                specialization: this.doctor.specialization,
-                patientData: patientData
-            }
-        });
-        document.dispatchEvent(event);
-    }
-
-    async getPatientData(token) {
-        try {
-            const response = await fetch('/api/patient/profile', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
+                :host(:hover) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
                 }
-            });
 
-            if (!response.ok) throw new Error('Failed to fetch patient data');
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching patient data:', error);
-            throw error;
-        }
-    }
+                .doctor-info {
+                    margin-bottom: 16px;
+                }
 
-    handleLogin() {
-        const event = new CustomEvent('openModal', {
-            detail: { type: 'login' }
+                h3 {
+                    margin: 0 0 8px 0;
+                    color: #333;
+                    font-size: 18px;
+                }
+
+                p {
+                    margin: 4px 0;
+                    color: #666;
+                    font-size: 14px;
+                }
+
+                .specialty {
+                    color: #007bff;
+                    font-weight: 500;
+                }
+
+                .doctor-actions {
+                    display: flex;
+                    gap: 8px;
+                    margin-top: 16px;
+                }
+
+                button {
+                    flex: 1;
+                    padding: 8px 12px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    transition: background-color 0.2s ease;
+                }
+
+                .edit-btn {
+                    background-color: #f8f9fa;
+                    color: #333;
+                    border: 1px solid #ddd;
+                }
+
+                .edit-btn:hover {
+                    background-color: #e9ecef;
+                }
+
+                .delete-btn {
+                    background-color: #dc3545;
+                    color: white;
+                }
+
+                .delete-btn:hover {
+                    background-color: #c82333;
+                }
+
+                i {
+                    font-size: 14px;
+                }
+            </style>
+
+            <div class="doctor-info">
+                <h3>${doctor.name || 'Unknown'}</h3>
+                <p class="specialty">${doctor.specialty || 'No specialty'}</p>
+                <p class="email">${doctor.email || 'No email'}</p>
+                <p class="phone">${doctor.phone || 'No phone number'}</p>
+            </div>
+            <div class="doctor-actions">
+                <button class="edit-btn" id="editBtn">
+                    <i class="fas fa-edit"></i>
+                    Edit
+                </button>
+                <button class="delete-btn" id="deleteBtn">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+            </div>
+        `;
+
+        // Add event listeners
+        this.shadowRoot.getElementById('editBtn').addEventListener('click', () => {
+            this.dispatchEvent(new CustomEvent('edit', {
+                detail: { doctor },
+                bubbles: true,
+                composed: true
+            }));
         });
-        document.dispatchEvent(event);
+
+        this.shadowRoot.getElementById('deleteBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete this doctor?')) {
+                this.dispatchEvent(new CustomEvent('delete', {
+                    detail: { doctorId: doctor.id },
+                    bubbles: true,
+                    composed: true
+                }));
+            }
+        });
     }
 }
+
+// Register the custom element
+customElements.define('doctor-card', DoctorCard);

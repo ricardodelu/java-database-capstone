@@ -35,7 +35,7 @@ class PatientRepoTest {
     }
 
     @Test
-    void whenFindByEmailOrPhone_thenReturnPatient() {
+    void whenFindByEmailOrPhoneNumber_thenReturnPatient() {
         // Arrange
         Patient patient = new Patient();
         patient.setName("Jane Doe");
@@ -45,8 +45,8 @@ class PatientRepoTest {
         entityManager.flush();
 
         // Act
-        Patient foundByEmail = patientRepo.findByEmailOrPhone("jane@example.com", null).orElse(null);
-        Patient foundByPhone = patientRepo.findByEmailOrPhone(null, "0987654321").orElse(null);
+        Patient foundByEmail = patientRepo.findByEmailOrPhoneNumber("jane@example.com", null).orElse(null);
+        Patient foundByPhone = patientRepo.findByEmailOrPhoneNumber(null, "0987654321").orElse(null);
 
         // Assert
         assertThat(foundByEmail).isNotNull();

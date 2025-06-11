@@ -49,7 +49,7 @@ public interface DoctorRepo extends JpaRepository<Doctor, Long> {
      */
     @Query("SELECT d FROM Doctor d WHERE " +
            "LOWER(d.specialty) = LOWER(:specialty) AND " +
-           "d.id NOT IN (SELECT a.doctorId FROM Appointment a WHERE " +
+           "d.id NOT IN (SELECT a.doctor.id FROM Appointment a WHERE " +
            "a.appointmentTime = :timeSlot AND a.status != 'CANCELLED')")
     List<Doctor> findAvailableDoctorsBySpecialtyAndTime(
         @Param("specialty") String specialty,

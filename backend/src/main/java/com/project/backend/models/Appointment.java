@@ -40,23 +40,33 @@ public class Appointment {
     private Patient patient;
 
     @Future(message = "Appointment date must be in the future")
-    private LocalDateTime appointmentDateTime;
+    private LocalDateTime appointmentTime;
 
     private String status;
 
     @Transient
+    public Long getDoctorId() {
+        return doctor != null ? doctor.getId() : null;
+    }
+
+    @Transient
+    public Long getPatientId() {
+        return patient != null ? patient.getId() : null;
+    }
+
+    @Transient
     public LocalDateTime getEndTime() {        
-        return appointmentDateTime.plusMinutes(60);        
+        return appointmentTime.plusMinutes(60);        
     }
 
     @Transient
     public Date getDate() {
-        return Date.valueOf(appointmentDateTime.toLocalDate());
+        return Date.valueOf(appointmentTime.toLocalDate());
     }
 
     @Transient  
     public String getTime() {
-        return appointmentDateTime.toLocalTime().toString();
+        return appointmentTime.toLocalTime().toString();
     }
 
 }

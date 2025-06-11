@@ -1,0 +1,84 @@
+package com.project.backend.controllers;
+
+import com.project.backend.services.AppointmentService;
+import com.project.backend.services.TokenValidationService;
+import com.project.backend.models.Appointment;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/appointments")
+@CrossOrigin(origins = "*")
+public class AppointmentController {
+
+    @Autowired
+    private AppointmentService appointmentService;
+
+    @Autowired
+    private TokenValidationService tokenService;
+
+    @PostMapping
+    public ResponseEntity<?> createAppointment(
+            @RequestHeader("Authorization") String token,
+            @RequestBody Appointment appointment) {
+        try {
+            return appointmentService.bookAppointment(appointment, token);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to create appointment: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelAppointment(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long id) {
+        try {
+            return appointmentService.cancelAppointment(id, token);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to cancel appointment: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/available-slots")
+    public ResponseEntity<?> getAvailableSlots(
+            @RequestParam Long doctorId,
+            @RequestParam String date) {
+        try {
+            return appointmentService.getAvailableSlots(doctorId, date);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch available slots: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/upcoming")
+    public ResponseEntity<?> getUpcomingAppointments(
+            @RequestHeader("Authorization") String token) {
+        try {
+            String email = tokenService.extractEmailFromToken(token);
+            return appointmentService.getUpcomingAppointments(email);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch upcoming appointments: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getAppointmentHistory(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            String email = tokenService.extractEmailFromToken(token);
+            return appointmentService.getAppointmentHistory(email, startDate, endDate);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch appointment history: " + e.getMessage()));
+        }
+    }
+} 

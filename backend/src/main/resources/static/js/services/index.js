@@ -29,7 +29,13 @@ class LoginHandler {
         
         try {
             // Add your login logic here
-            const response = await fetch(`/api/auth/${type}`, {
+            let endpoint;
+            if (type === 'adminLogin') {
+                endpoint = '/api/admin/login';
+            } else {
+                endpoint = `/api/auth/${type}`;
+            }
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

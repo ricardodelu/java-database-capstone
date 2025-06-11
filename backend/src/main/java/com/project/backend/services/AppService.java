@@ -4,20 +4,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.repositories.AdminRepo;
 import com.project.backend.repositories.DoctorRepo;
 import com.project.backend.repositories.PatientRepo;
+import com.project.backend.repositories.AppointmentRepo;
+import com.project.backend.repositories.PrescriptionRepo;
 import com.project.backend.models.Admin;
 import com.project.backend.models.Doctor;
 import com.project.backend.models.Patient;
 import com.project.backend.models.Appointment;
-import com.project.backend.models.*;
+import com.project.backend.models.Prescription;
+import com.project.backend.dtos.DoctorDTO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@Transactional
 public class AppService {
     
     @Autowired
@@ -32,6 +42,9 @@ public class AppService {
     @Autowired
     private PatientRepo patientRepository;
     
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     @Lazy
     @Autowired
     private DoctorService doctorService;
@@ -39,6 +52,12 @@ public class AppService {
     @Lazy
     @Autowired
     private PatientService patientService;
+    
+    @Autowired
+    private AppointmentRepo appointmentRepo;
+
+    @Autowired
+    private PrescriptionRepo prescriptionRepo;
     
     public Map<String, String> validateToken(String token, String role) {
         try {
@@ -55,10 +74,22 @@ public class AppService {
             String username = credentials.get("username");
             String password = credentials.get("password");
 
+            // Log DB connection info and login attempt
+            System.err.println("[DEBUG] DB URL: " + System.getProperty("spring.datasource.url"));
+            System.err.println("[DEBUG] DB User: " + System.getProperty("spring.datasource.username"));
+            System.err.println("[DEBUG] Attempting login for username: " + username);
+
             Admin admin = adminRepository.findByUsername(username)
                 .orElse(null);
 
-            if (admin != null && admin.getPassword().equals(password)) {
+            System.err.println("[DEBUG] Admin lookup result: " + (admin != null ? "FOUND" : "NOT FOUND"));
+            if (admin != null) {
+                System.err.println("[DEBUG] Username in DB: " + admin.getUsername());
+                System.err.println("[DEBUG] Password hash in DB: " + admin.getPassword());
+                System.err.println("[DEBUG] Password matches: " + passwordEncoder.matches(password, admin.getPassword()));
+            }
+
+            if (admin != null && passwordEncoder.matches(password, admin.getPassword())) {
                 String token = tokenService.generateToken(username, "admin");
                 return ResponseEntity.ok(Map.of(
                     "token", token,
@@ -70,49 +101,32 @@ public class AppService {
                 "error", "Invalid credentials"
             ));
         } catch (Exception e) {
+            System.err.println("AppService.validateAdmin caught an exception:");
+            e.printStackTrace(System.err);
             return ResponseEntity.internalServerError().body(Map.of(
                 "error", "Authentication failed"
             ));
         }
     }
 
-    public Map<String, Object> filterDoctors(String name, String specialty, String time) {
+    public Map<String, Object> getDoctors() {
         Map<String, Object> response = new HashMap<>();
         try {
-            List<Doctor> doctors = doctorService.filterDoctors(name, specialty, time);
+            List<Doctor> doctors = doctorRepository.findAll();
             response.put("success", true);
             response.put("doctors", doctors);
         } catch (Exception e) {
             response.put("success", false);
-            response.put("error", "Failed to filter doctors");
+            response.put("error", "Failed to fetch doctors");
         }
         return response;
     }
 
-    public int validateAppointment(Appointment appointment) {
-        try {
-            Doctor doctor = doctorRepository.findById(appointment.getDoctorId())
-                .orElse(null);
-            
-            if (doctor == null) {
-                return -1; // Doctor doesn't exist
-            }
-
-            List<String> availableSlots = doctorService.getDoctorAvailability(doctor.getId());
-            if (availableSlots.contains(appointment.getTime())) {
-                return 1; // Valid appointment time
-            }
-            return 0; // Time slot not available
-        } catch (Exception e) {
-            return -1; // Error occurred
-        }
-    }
-
     public boolean validatePatient(Patient patient) {
         try {
-            return patientRepository.findByEmailOrPhone(
+            return patientRepository.findByEmailOrPhoneNumber(
                 patient.getEmail(), 
-                patient.getPhone()
+                patient.getPhoneNumber()
             ).isEmpty();
         } catch (Exception e) {
             return false;
@@ -145,27 +159,90 @@ public class AppService {
         }
     }
 
-    public ResponseEntity<?> filterPatientAppointments(String condition, String doctorName, String token) {
+    public ResponseEntity<?> getPatientAppointments(String token) {
         try {
             Map<String, String> validation = validateToken(token, "patient");
             if (!validation.isEmpty()) {
                 return ResponseEntity.badRequest().body(validation);
             }
 
-            String patientId = tokenService.extractUserIdFromToken(token);
-            List<Appointment> appointments = patientService.filterAppointments(
-                patientId, 
-                condition, 
-                doctorName
-            );
-
-            return ResponseEntity.ok(Map.of(
-                "appointments", appointments
-            ));
+            String email = tokenService.extractEmailFromToken(token);
+            return patientService.getPatientAppointments(email);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to filter appointments"
+                "error", "Failed to fetch appointments"
             ));
         }
+    }
+
+    public List<Doctor> getAllDoctors() {
+        return doctorRepository.findAll();
+    }
+
+    public Doctor createDoctor(DoctorDTO doctorDTO) {
+        Doctor doctor = new Doctor();
+        doctor.setName(doctorDTO.getName());
+        doctor.setEmail(doctorDTO.getEmail());
+        doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
+        doctor.setSpecialization(doctorDTO.getSpecialization());
+        doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
+        return doctorRepository.save(doctor);
+    }
+
+    public Doctor updateDoctor(Long id, DoctorDTO doctorDTO) {
+        Optional<Doctor> existingDoctor = doctorRepository.findById(id);
+        if (existingDoctor.isEmpty()) {
+            throw new RuntimeException("Doctor not found");
+        }
+
+        Doctor doctor = existingDoctor.get();
+        doctor.setName(doctorDTO.getName());
+        doctor.setEmail(doctorDTO.getEmail());
+        doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
+        doctor.setSpecialization(doctorDTO.getSpecialization());
+        doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
+        return doctorRepository.save(doctor);
+    }
+
+    public void deleteDoctor(Long id) {
+        if (!doctorRepository.existsById(id)) {
+            throw new RuntimeException("Doctor not found");
+        }
+        doctorRepository.deleteById(id);
+    }
+
+    public List<Patient> getAllPatients() {
+        return patientRepository.findAll();
+    }
+
+    public List<Appointment> getAllAppointments(String status, String date) {
+        if (status != null && date != null) {
+            LocalDate parsedDate = LocalDate.parse(date);
+            LocalDateTime start = parsedDate.atStartOfDay();
+            LocalDateTime end = parsedDate.plusDays(1).atStartOfDay();
+            return appointmentRepo.findByStatusAndDate(status, start, end);
+        } else if (status != null) {
+            return appointmentRepo.findByStatus(status);
+        } else if (date != null) {
+            LocalDate parsedDate = LocalDate.parse(date);
+            LocalDateTime start = parsedDate.atStartOfDay();
+            LocalDateTime end = parsedDate.plusDays(1).atStartOfDay();
+            return appointmentRepo.findByDate(start, end);
+        }
+        return appointmentRepo.findAll();
+    }
+
+    public List<Prescription> getAllPrescriptions(String doctorId, String patientId) {
+        if (doctorId != null && patientId != null) {
+            return prescriptionRepo.findByDoctorIdAndPatientId(
+                Long.parseLong(doctorId), 
+                Long.parseLong(patientId)
+            );
+        } else if (doctorId != null) {
+            return prescriptionRepo.findByDoctorId(Long.parseLong(doctorId));
+        } else if (patientId != null) {
+            return prescriptionRepo.findByPatientId(Long.parseLong(patientId));
+        }
+        return prescriptionRepo.findAll();
     }
 }

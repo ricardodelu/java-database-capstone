@@ -3,112 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Clinic Management</title>
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" th:href="@{/assets/images/logo/logo.png}">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>Admin Dashboard - Clinic Management System</title>
     
     <!-- CSS -->
-    <link rel="stylesheet" th:href="@{/assets/css/style.css}">
     <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}">
+    <link rel="stylesheet" th:href="@{/assets/css/style.css}">
     
-    <!-- Utility Scripts -->
-    <script th:src="@{/js/util.js}" defer></script>
+    <!-- JavaScript -->
     <script th:src="@{/js/render.js}" defer></script>
-    
-    <!-- Components -->
+    <script th:src="@{/js/util.js}" defer></script>
     <script th:src="@{/js/components/header.js}" defer></script>
     <script th:src="@{/js/components/footer.js}" defer></script>
-    <script th:src="@{/js/components/doctorCard.js}" defer></script>
 </head>
 <body>
-    <div class="wrapper">
-        <!-- Header Placeholder -->
-        <div id="header"></div>
-
-        <main class="main-content">
-            <div class="container">
-                <!-- Dashboard Header -->
-                <div class="dashboard-header">
-                    <h1>Admin Dashboard</h1>
-                    <button id="addDoctorBtn" class="btn-primary">
-                        Add New Doctor
-                    </button>
-                </div>
-
+    <div class="container">
+        <div class="wrapper">
+            <!-- Dynamic Header -->
+            <div id="header"></div>
+            
+            <main class="main-content">
                 <!-- Search and Filter Section -->
-                <div class="filters-section">
-                    <div class="search-bar">
-                        <input 
-                            type="text" 
-                            id="searchBar" 
-                            placeholder="Search doctors by name..."
-                            class="search-input"
-                        >
+                <section class="search-filter-section">
+                    <div class="search-container">
+                        <input type="text" id="searchBar" placeholder="Search by doctor name..." />
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
                     </div>
                     
-                    <div class="filter-controls">
+                    <div class="filter-container">
+                        <select id="specialtyFilter" class="filter-select">
+                            <option value="">All Specialties</option>
+                            <option value="cardiology">Cardiology</option>
+                            <option value="neurology">Neurology</option>
+                            <option value="pediatrics">Pediatrics</option>
+                            <option value="orthopedics">Orthopedics</option>
+                            <option value="dermatology">Dermatology</option>
+                        </select>
+                        
                         <select id="timeFilter" class="filter-select">
                             <option value="">Sort by Time</option>
                             <option value="newest">Newest First</option>
                             <option value="oldest">Oldest First</option>
                         </select>
-
-                        <select id="specialtyFilter" class="filter-select">
-                            <option value="">All Specialties</option>
-                            <option th:each="specialty : ${specialties}"
-                                    th:value="${specialty}"
-                                    th:text="${specialty}">
-                                Specialty
-                            </option>
-                        </select>
                     </div>
-                </div>
+                </section>
 
-                <!-- Doctors List -->
-                <div id="doctorsList" class="doctors-grid">
-                    <!-- Dynamic content will be inserted here -->
-                </div>
-            </div>
-        </main>
-
-        <!-- Footer Placeholder -->
-        <div id="footer"></div>
-
-        <!-- Add/Edit Doctor Modal -->
-        <div id="doctorModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2 id="modalTitle">Add New Doctor</h2>
-                <form id="doctorForm">
-                    <div class="form-group">
-                        <label for="doctorName">Name</label>
-                        <input type="text" id="doctorName" required>
+                <!-- Doctor List Section -->
+                <section class="doctor-list-section">
+                    <div class="section-header">
+                        <h2>Doctor Management</h2>
+                        <button id="addDoctorBtn" class="admin-btn">
+                            <i class="fas fa-plus"></i> Add Doctor
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label for="doctorSpecialty">Specialty</label>
-                        <select id="doctorSpecialty" required>
-                            <option value="">Select Specialty</option>
-                            <option th:each="specialty : ${specialties}"
-                                    th:value="${specialty}"
-                                    th:text="${specialty}">
-                                Specialty
-                            </option>
-                        </select>
+                    
+                    <div id="doctorList" class="doctor-grid">
+                        <!-- Doctor cards will be dynamically inserted here -->
                     </div>
-                    <button type="submit" class="btn-primary">Save</button>
-                </form>
-            </div>
+                </section>
+            </main>
+
+            <!-- Dynamic Footer -->
+            <div id="footer"></div>
         </div>
     </div>
 
-    <!-- Services -->
-    <script th:src="@{/js/services/doctorServices.js}" defer></script>
-    <script th:src="@{/js/adminDashboard.js}" defer></script>
+    <!-- Add Doctor Modal -->
+    <div id="addDoctorModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Doctor</h2>
+            <form id="addDoctorForm">
+                <div class="form-group">
+                    <label for="doctorName">Full Name</label>
+                    <input type="text" id="doctorName" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="doctorEmail">Email</label>
+                    <input type="email" id="doctorEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="doctorSpecialty">Specialty</label>
+                    <select id="doctorSpecialty" name="specialty" required>
+                        <option value="">Select Specialty</option>
+                        <option value="cardiology">Cardiology</option>
+                        <option value="neurology">Neurology</option>
+                        <option value="pediatrics">Pediatrics</option>
+                        <option value="orthopedics">Orthopedics</option>
+                        <option value="dermatology">Dermatology</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="doctorPhone">Phone</label>
+                    <input type="tel" id="doctorPhone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="doctorPassword">Password</label>
+                    <input type="password" id="doctorPassword" name="password" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">Add Doctor</button>
+                    <button type="button" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Service Scripts -->
+    <script type="module" th:src="@{/js/services/adminDashboard.js}" defer></script>
+    <script type="module" th:src="@{/js/components/doctorCard.js}" defer></script>
+    
+    <!-- Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
 </body>
 </html>

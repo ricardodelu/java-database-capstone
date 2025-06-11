@@ -5,12 +5,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import com.project.backend.repositories.*;
 import com.project.backend.models.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.ArrayList;
 
 @Service
 public class AppointmentService {
@@ -36,28 +41,33 @@ public class AppointmentService {
             }
 
             // Validate doctor exists
-            if (!doctorRepository.existsById(appointment.getDoctorId())) {
+            if (!doctorRepository.existsById(appointment.getDoctor().getId())) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Doctor not found"
                 ));
             }
 
             // Check if time slot is available
-            if (isTimeSlotBooked(appointment.getDoctorId(), appointment.getAppointmentTime())) {
+            if (appointmentRepository.isTimeSlotBooked(
+                appointment.getDoctor().getId(), 
+                appointment.getAppointmentTime()
+            )) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Time slot already booked"
                 ));
             }
 
-            // Set patient ID from token
-            String patientId = tokenService.extractUserIdFromToken(token);
-            appointment.setPatientId(patientId);
+            // Set patient from token
+            String email = tokenService.extractEmailFromToken(token);
+            Patient patient = patientRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+            appointment.setPatient(patient);
             
             // Save appointment
             Appointment saved = appointmentRepository.save(appointment);
             return ResponseEntity.ok(Map.of(
                 "message", "Appointment booked successfully",
-                "appointmentId", saved.getId().toString()
+                "appointmentId", saved.getId()
             ));
 
         } catch (Exception e) {
@@ -84,8 +94,10 @@ public class AppointmentService {
             }
 
             // Verify ownership
-            String patientId = tokenService.extractUserIdFromToken(token);
-            if (!existingAppointment.get().getPatientId().equals(patientId)) {
+            String email = tokenService.extractEmailFromToken(token);
+            Patient patient = patientRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+            if (!existingAppointment.get().getPatient().getId().equals(patient.getId())) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Unauthorized to modify this appointment"
                 ));
@@ -93,7 +105,10 @@ public class AppointmentService {
 
             // Check if new time slot is available
             if (!existingAppointment.get().getAppointmentTime().equals(updatedAppointment.getAppointmentTime()) &&
-                isTimeSlotBooked(updatedAppointment.getDoctorId(), updatedAppointment.getAppointmentTime())) {
+                appointmentRepository.isTimeSlotBooked(
+                    updatedAppointment.getDoctor().getId(), 
+                    updatedAppointment.getAppointmentTime()
+                )) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "New time slot is already booked"
                 ));
@@ -134,8 +149,10 @@ public class AppointmentService {
             }
 
             // Verify ownership
-            String patientId = tokenService.extractUserIdFromToken(token);
-            if (!appointment.get().getPatientId().equals(patientId)) {
+            String email = tokenService.extractEmailFromToken(token);
+            Patient patient = patientRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+            if (!appointment.get().getPatient().getId().equals(patient.getId())) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Unauthorized to cancel this appointment"
                 ));
@@ -156,49 +173,101 @@ public class AppointmentService {
         }
     }
 
-    public ResponseEntity<?> getAppointments(String patientName, LocalDate date, String token) {
+    public ResponseEntity<?> getAvailableSlots(Long doctorId, String date) {
         try {
-            // Validate token and role
-            Map<String, String> validation = tokenService.validateToken(token, "doctor");
-            if (!validation.isEmpty()) {
-                return ResponseEntity.badRequest().body(validation);
+            // Validate doctor exists
+            if (!doctorRepository.existsById(doctorId)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Doctor not found"
+                ));
             }
 
-            // Get doctor ID from token
-            String doctorId = tokenService.extractUserIdFromToken(token);
+            LocalDate appointmentDate = LocalDate.parse(date);
+            LocalDateTime startOfDay = appointmentDate.atStartOfDay();
+            LocalDateTime endOfDay = appointmentDate.plusDays(1).atStartOfDay();
 
-            // Get appointments for the date
-            LocalDateTime startTime = date.atStartOfDay();
-            LocalDateTime endTime = date.plusDays(1).atStartOfDay();
+            // Get all appointments for the day
+            List<Appointment> appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(
+                doctorId, startOfDay, endOfDay);
 
-            List<Appointment> appointments = appointmentRepository
-                .findByDoctorIdAndAppointmentTimeBetween(doctorId, startTime, endTime);
+            // Generate available time slots (assuming 30-minute slots from 9 AM to 5 PM)
+            List<String> allSlots = generateTimeSlots();
+            Set<String> bookedSlots = appointments.stream()
+                .map(apt -> apt.getAppointmentTime().toLocalTime().toString())
+                .collect(Collectors.toSet());
 
-            // Filter by patient name if provided
-            if (patientName != null && !patientName.isEmpty()) {
-                appointments = appointments.stream()
-                    .filter(a -> patientRepository.findById(a.getPatientId())
-                        .map(p -> p.getName().toLowerCase().contains(patientName.toLowerCase()))
-                        .orElse(false))
-                    .toList();
-            }
+            // Filter out booked slots
+            List<String> availableSlots = allSlots.stream()
+                .filter(slot -> !bookedSlots.contains(slot))
+                .collect(Collectors.toList());
 
-            return ResponseEntity.ok(Map.of(
-                "appointments", appointments
-            ));
+            return ResponseEntity.ok(Map.of("availableSlots", availableSlots));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to fetch appointments: " + e.getMessage()
+                "error", "Failed to fetch available slots: " + e.getMessage()
             ));
         }
     }
 
-    private boolean isTimeSlotBooked(String doctorId, LocalDateTime appointmentTime) {
-        return appointmentRepository.existsByDoctorIdAndAppointmentTimeAndStatusNot(
-            doctorId, 
-            appointmentTime,
-            "CANCELLED"
-        );
+    public ResponseEntity<?> getUpcomingAppointments(String email) {
+        try {
+            Patient patient = patientRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            LocalDateTime now = LocalDateTime.now();
+            List<Appointment> appointments = appointmentRepository.findByPatientIdAndAppointmentTimeAfter(
+                patient.getId(), now);
+
+            // Sort by appointment time
+            appointments.sort(Comparator.comparing(Appointment::getAppointmentTime));
+
+            return ResponseEntity.ok(Map.of("appointments", appointments));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Failed to fetch upcoming appointments: " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<?> getAppointmentHistory(String email, String startDate, String endDate) {
+        try {
+            Patient patient = patientRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            LocalDateTime start = startDate != null ? 
+                LocalDate.parse(startDate).atStartOfDay() : 
+                LocalDate.now().minusMonths(1).atStartOfDay();
+            
+            LocalDateTime end = endDate != null ? 
+                LocalDate.parse(endDate).plusDays(1).atStartOfDay() : 
+                LocalDateTime.now();
+
+            List<Appointment> appointments = appointmentRepository.findByPatientIdAndAppointmentTimeBetween(
+                patient.getId(), start, end);
+
+            // Sort by appointment time in descending order
+            appointments.sort(Comparator.comparing(Appointment::getAppointmentTime).reversed());
+
+            return ResponseEntity.ok(Map.of("appointments", appointments));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Failed to fetch appointment history: " + e.getMessage()
+            ));
+        }
+    }
+
+    private List<String> generateTimeSlots() {
+        List<String> slots = new ArrayList<>();
+        LocalTime start = LocalTime.of(9, 0); // 9 AM
+        LocalTime end = LocalTime.of(17, 0);  // 5 PM
+        
+        while (start.isBefore(end)) {
+            slots.add(start.toString());
+            start = start.plusMinutes(30);
+        }
+        return slots;
     }
 }

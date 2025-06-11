@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{patient/base :: html(
+        ~{::title},
+        ~{::.styles},
+        ~{::.scripts},
+        ~{::.main-content}
+      )}">
+<head>
+    <title>Patient Dashboard - Clinic Management System</title>
+    
+    <!-- Page-specific styles -->
+    <th:block class="styles">
+        <link rel="stylesheet" th:href="@{/assets/css/patientDashboard.css}" />
+    </th:block>
+    
+    <!-- Page-specific scripts -->
+    <th:block class="scripts">
+        <script type="module" th:src="@{/js/patientDashboard.js}" defer></script>
+    </th:block>
+</head>
+<body>
+    <!-- Main Content -->
+    <th:block class="main-content">
+        <!-- Search Section -->
+        <div class="search-section">
+            <input type="text" 
+                   id="searchBar" 
+                   class="searchBar" 
+                   placeholder="Search doctors by name, specialty, or location..." />
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-wrapper">
+            <select class="filter-select" id="filterTime">
+                <option value="">All Times</option>
+                <option value="AM">Morning (AM)</option>
+                <option value="PM">Afternoon (PM)</option>
+            </select>
+            <select class="filter-select" id="filterSpecialty">
+                <option value="">All Specialties</option>
+                <option th:each="specialty : ${specialties}"
+                        th:value="${specialty}"
+                        th:text="${specialty}">Specialty</option>
+            </select>
+        </div>
+
+        <!-- Doctor Cards Container -->
+        <div id="content" class="doctor-cards-container">
+            <!-- Doctor cards will be populated dynamically -->
+            <div th:if="${doctors.empty}" class="no-results">
+                <p>No doctors found matching your criteria.</p>
+            </div>
+            <div th:each="doctor : ${doctors}" class="doctor-card" th:data-doctor-id="${doctor.id}">
+                <h3 th:text="${doctor.name}">Doctor Name</h3>
+                <p class="specialty" th:text="${doctor.specialty}">Specialty</p>
+                <p class="location" th:text="${doctor.location}">Location</p>
+                <button class="btn-book" th:onclick="'openBookingModal(' + ${doctor.id} + ')'">
+                    Book Appointment
+                </button>
+            </div>
+        </div>
+
+        <!-- Booking Form -->
+        <form id="bookingForm" class="booking-form" th:action="@{/api/appointments}" method="POST" style="display: none;">
+            <input type="hidden" name="doctorId" id="doctorId" />
+            <input type="hidden" name="patientId" th:value="${patient.id}" />
+            <div class="form-group">
+                <label for="appointmentDate">Date</label>
+                <input type="date" id="appointmentDate" name="date" required
+                       th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+            </div>
+            <div class="form-group">
+                <label for="appointmentTime">Time</label>
+                <select id="appointmentTime" name="time" required>
+                    <option value="">Select a time slot</option>
+                    <!-- Time slots will be populated dynamically -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="appointmentReason">Reason for Visit</label>
+                <textarea id="appointmentReason" name="reason" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn-book">Confirm Booking</button>
+        </form>
+    </th:block>
+</body>
+</html> 

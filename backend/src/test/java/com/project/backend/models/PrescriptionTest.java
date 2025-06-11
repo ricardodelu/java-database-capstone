@@ -17,6 +17,6 @@ class PrescriptionTest {
         // Assert
         assertThat(prescription.getCreatedAt()).isNotNull();
         assertThat(prescription.getUpdatedAt()).isNotNull();
-        assertThat(prescription.getDate()).isNotNull();
+        assertThat(prescription.getPrescribedAt()).isNotNull();
     }
 }

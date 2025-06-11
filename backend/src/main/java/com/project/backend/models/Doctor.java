@@ -44,5 +44,11 @@ public class Doctor {
     private String phoneNumber;
     @ElementCollection
     private List<String> availableTimes;
+    @NotNull(message = "Specialization cannot be null")
+    @Size(max = 100, message = "Specialization must be less than 100 characters")
+    private String specialization;
+    @NotNull(message = "License number cannot be null")
+    @Size(min = 5, max = 20, message = "License number must be between 5 and 20 characters")
+    private String licenseNumber;
     
 }

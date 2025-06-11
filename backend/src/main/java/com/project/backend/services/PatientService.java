@@ -4,12 +4,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 
 import com.project.backend.models.Patient;
 import com.project.backend.models.Appointment;
+import com.project.backend.models.Prescription;
+import com.project.backend.dtos.PatientDTO;
 import com.project.backend.dtos.AppointmentDTO;
+import com.project.backend.dtos.PrescriptionDTO;
 import com.project.backend.repositories.PatientRepo;
 import com.project.backend.repositories.AppointmentRepo;
+import com.project.backend.repositories.PrescriptionRepo;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,150 +31,153 @@ public class PatientService {
     private AppointmentRepo appointmentRepo;
     
     @Autowired
+    private PrescriptionRepo prescriptionRepo;
+    
+    @Autowired
     private TokenValidationService tokenService;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Transactional
-    public int createPatient(Patient patient) {
+    public ResponseEntity<?> registerPatient(PatientDTO patientDTO) {
         try {
-            if (patientRepo.existsByEmail(patient.getEmail())) {
-                return -1; // Patient already exists
+            if (patientRepo.existsByEmail(patientDTO.getEmail())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Email already registered"
+                ));
             }
+
+            Patient patient = new Patient();
+            patient.setName(patientDTO.getName());
+            patient.setEmail(patientDTO.getEmail());
+            patient.setPhoneNumber(patientDTO.getPhoneNumber());
+            patient.setAddress(patientDTO.getAddress());
+            patient.setPassword(passwordEncoder.encode(patientDTO.getPassword()));
+
             patientRepo.save(patient);
-            return 1;
-        } catch (Exception e) {
-            return 0;
-        }
-    }
 
-    public ResponseEntity<?> getPatientAppointment(Long id, String token) {
-        try {
-            // Validate token and extract email
-            String email = tokenService.extractEmailFromToken(token);
-            Patient patient = patientRepo.findByEmail(email).orElse(null);
-
-            if (patient == null || !patient.getId().equals(id)) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Unauthorized access"
-                ));
-            }
-
-            List<Appointment> appointments = appointmentRepo.findByPatientId(id);
-            List<AppointmentDTO> appointmentDTOs = appointments.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-
+            String token = tokenService.generateToken(patient.getEmail(), "patient");
             return ResponseEntity.ok(Map.of(
-                "appointments", appointmentDTOs
+                "message", "Registration successful",
+                "token", token,
+                "patient", convertToDTO(patient)
             ));
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to fetch appointments"
-            ));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Registration failed: " + e.getMessage()));
         }
     }
 
-    public ResponseEntity<?> filterByCondition(String condition, Long id) {
+    public ResponseEntity<?> login(Map<String, String> credentials) {
         try {
-            LocalDateTime now = LocalDateTime.now();
-            List<Appointment> appointments;
+            String email = credentials.get("email");
+            String password = credentials.get("password");
 
-            if ("past".equalsIgnoreCase(condition)) {
-                appointments = appointmentRepo.findByPatientIdAndAppointmentTimeBefore(id, now);
-            } else if ("future".equalsIgnoreCase(condition)) {
-                appointments = appointmentRepo.findByPatientIdAndAppointmentTimeAfter(id, now);
-            } else {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Invalid condition"
-                ));
-            }
-
-            List<AppointmentDTO> appointmentDTOs = appointments.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok(Map.of(
-                "appointments", appointmentDTOs
-            ));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to filter appointments"
-            ));
-        }
-    }
-
-    public ResponseEntity<?> filterByDoctor(String name, Long patientId) {
-        try {
-            List<Appointment> appointments = appointmentRepo
-                .filterByDoctorNameAndPatientId(name, patientId);
-
-            List<AppointmentDTO> appointmentDTOs = appointments.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok(Map.of(
-                "appointments", appointmentDTOs
-            ));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to filter appointments"
-            ));
-        }
-    }
-
-    public ResponseEntity<?> filterByDoctorAndCondition(
-            String condition, String name, Long patientId) {
-        try {
-            LocalDateTime now = LocalDateTime.now();
-            List<Appointment> appointments = appointmentRepo
-                .filterByDoctorNameAndPatientId(name, patientId);
-
-            // Apply condition filter
-            if ("past".equalsIgnoreCase(condition)) {
-                appointments = appointments.stream()
-                    .filter(a -> a.getAppointmentTime().isBefore(now))
-                    .collect(Collectors.toList());
-            } else if ("future".equalsIgnoreCase(condition)) {
-                appointments = appointments.stream()
-                    .filter(a -> a.getAppointmentTime().isAfter(now))
-                    .collect(Collectors.toList());
-            }
-
-            List<AppointmentDTO> appointmentDTOs = appointments.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok(Map.of(
-                "appointments", appointmentDTOs
-            ));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to filter appointments"
-            ));
-        }
-    }
-
-    public ResponseEntity<?> getPatientDetails(String token) {
-        try {
-            String email = tokenService.extractEmailFromToken(token);
             Patient patient = patientRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
+            if (!passwordEncoder.matches(password, patient.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid credentials"));
+            }
+
+            String token = tokenService.generateToken(email, "patient");
             return ResponseEntity.ok(Map.of(
-                "patient", patient
+                "token", token,
+                "patient", convertToDTO(patient)
             ));
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to fetch patient details"
-            ));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Login failed: " + e.getMessage()));
         }
     }
 
-    private AppointmentDTO convertToDTO(Appointment appointment) {
+    public ResponseEntity<?> getPatientProfile(String email) {
+        try {
+            Patient patient = patientRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            return ResponseEntity.ok(convertToDTO(patient));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch profile: " + e.getMessage()));
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<?> updatePatientProfile(String email, PatientDTO patientDTO) {
+        try {
+            Patient patient = patientRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            // Update only non-null fields
+            if (patientDTO.getName() != null) patient.setName(patientDTO.getName());
+            if (patientDTO.getPhoneNumber() != null) patient.setPhoneNumber(patientDTO.getPhoneNumber());
+            if (patientDTO.getAddress() != null) patient.setAddress(patientDTO.getAddress());
+            if (patientDTO.getPassword() != null) {
+                patient.setPassword(passwordEncoder.encode(patientDTO.getPassword()));
+            }
+
+            patientRepo.save(patient);
+            return ResponseEntity.ok(convertToDTO(patient));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to update profile: " + e.getMessage()));
+        }
+    }
+
+    public ResponseEntity<?> getPatientAppointments(String email) {
+        try {
+            Patient patient = patientRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            List<Appointment> appointments = appointmentRepo.findByPatient_Id(patient.getId());
+            List<AppointmentDTO> appointmentDTOs = appointments.stream()
+                .map(this::convertToAppointmentDTO)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of("appointments", appointmentDTOs));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch appointments: " + e.getMessage()));
+        }
+    }
+
+    public ResponseEntity<?> getPatientPrescriptions(String email) {
+        try {
+            Patient patient = patientRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            List<Prescription> prescriptions = prescriptionRepo.findByPatientId(patient.getId());
+            List<PrescriptionDTO> prescriptionDTOs = prescriptions.stream()
+                .map(this::convertToPrescriptionDTO)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of("prescriptions", prescriptionDTOs));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch prescriptions: " + e.getMessage()));
+        }
+    }
+
+    private PatientDTO convertToDTO(Patient patient) {
+        PatientDTO dto = new PatientDTO();
+        dto.setId(patient.getId());
+        dto.setName(patient.getName());
+        dto.setEmail(patient.getEmail());
+        dto.setPhoneNumber(patient.getPhoneNumber());
+        dto.setAddress(patient.getAddress());
+        return dto;
+    }
+
+    private AppointmentDTO convertToAppointmentDTO(Appointment appointment) {
         return new AppointmentDTO(
             appointment.getId(),
             appointment.getDoctorId(),
@@ -176,10 +185,25 @@ public class PatientService {
             appointment.getPatientId(),
             appointment.getPatient().getName(),
             appointment.getPatient().getEmail(),
-            appointment.getPatient().getPhone(),
+            appointment.getPatient().getPhoneNumber(),
             appointment.getPatient().getAddress(),
             appointment.getAppointmentTime(),
             appointment.getStatus()
         );
+    }
+
+    private PrescriptionDTO convertToPrescriptionDTO(Prescription prescription) {
+        PrescriptionDTO dto = new PrescriptionDTO();
+        dto.setId(prescription.getId());
+        dto.setPatientId(prescription.getPatient().getId());
+        dto.setDoctorId(prescription.getDoctor().getId());
+        dto.setMedication(prescription.getMedication());
+        dto.setDosage(prescription.getDosage());
+        dto.setDuration(prescription.getDuration());
+        dto.setNotes(prescription.getNotes());
+        dto.setPrescribedAt(prescription.getPrescribedAt());
+        dto.setPatientName(prescription.getPatient().getName());
+        dto.setDoctorName(prescription.getDoctor().getName());
+        return dto;
     }
 }

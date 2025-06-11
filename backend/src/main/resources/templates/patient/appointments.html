@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{patient/base :: html(
+        ~{::title},
+        ~{::.styles},
+        ~{::.scripts},
+        ~{::.main-content}
+      )}">
+<head>
+    <title>My Appointments - Patient Portal</title>
+    
+    <!-- Page-specific styles -->
+    <th:block class="styles">
+        <link rel="stylesheet" th:href="@{/assets/css/patientAppointments.css}" />
+    </th:block>
+    
+    <!-- Page-specific scripts -->
+    <th:block class="scripts">
+        <script type="module" th:src="@{/js/patientAppointments.js}" defer></script>
+    </th:block>
+</head>
+<body>
+    <!-- Main Content -->
+    <th:block class="main-content">
+        <div class="appointments-container">
+            <h1>My Appointments</h1>
+            
+            <!-- Tabs for different appointment views -->
+            <div class="appointment-tabs">
+                <button class="tab-btn active" data-tab="upcoming">Upcoming</button>
+                <button class="tab-btn" data-tab="past">Past</button>
+                <button class="tab-btn" data-tab="cancelled">Cancelled</button>
+            </div>
+            
+            <!-- Upcoming Appointments -->
+            <div id="upcoming" class="tab-content active">
+                <div th:if="${upcomingAppointments.empty}" class="no-appointments">
+                    <p>No upcoming appointments scheduled.</p>
+                    <a href="/patient/dashboard" class="btn-primary">Book an Appointment</a>
+                </div>
+                <div th:each="appointment : ${upcomingAppointments}" class="appointment-card">
+                    <div class="appointment-header">
+                        <h3 th:text="${appointment.doctor.name}">Doctor Name</h3>
+                        <span class="status" th:text="${appointment.status}">Status</span>
+                    </div>
+                    <div class="appointment-details">
+                        <p class="date" th:text="${#temporals.format(appointment.appointmentTime, 'EEEE, MMMM d, yyyy')}">Date</p>
+                        <p class="time" th:text="${#temporals.format(appointment.appointmentTime, 'h:mm a')}">Time</p>
+                        <p class="reason" th:text="${appointment.reason}">Reason</p>
+                    </div>
+                    <div class="appointment-actions">
+                        <button th:if="${appointment.status == 'SCHEDULED'}"
+                                class="btn-cancel"
+                                th:onclick="'cancelAppointment(' + ${appointment.id} + ')'">
+                            Cancel Appointment
+                        </button>
+                        <button th:if="${appointment.status == 'SCHEDULED'}"
+                                class="btn-reschedule"
+                                th:onclick="'rescheduleAppointment(' + ${appointment.id} + ')'">
+                            Reschedule
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Past Appointments -->
+            <div id="past" class="tab-content">
+                <div th:if="${pastAppointments.empty}" class="no-appointments">
+                    <p>No past appointments found.</p>
+                </div>
+                <div th:each="appointment : ${pastAppointments}" class="appointment-card past">
+                    <div class="appointment-header">
+                        <h3 th:text="${appointment.doctor.name}">Doctor Name</h3>
+                        <span class="status" th:text="${appointment.status}">Status</span>
+                    </div>
+                    <div class="appointment-details">
+                        <p class="date" th:text="${#temporals.format(appointment.appointmentTime, 'EEEE, MMMM d, yyyy')}">Date</p>
+                        <p class="time" th:text="${#temporals.format(appointment.appointmentTime, 'h:mm a')}">Time</p>
+                        <p class="reason" th:text="${appointment.reason}">Reason</p>
+                        <p th:if="${appointment.notes}" class="notes" th:text="${appointment.notes}">Notes</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cancelled Appointments -->
+            <div id="cancelled" class="tab-content">
+                <div th:if="${cancelledAppointments.empty}" class="no-appointments">
+                    <p>No cancelled appointments found.</p>
+                </div>
+                <div th:each="appointment : ${cancelledAppointments}" class="appointment-card cancelled">
+                    <div class="appointment-header">
+                        <h3 th:text="${appointment.doctor.name}">Doctor Name</h3>
+                        <span class="status" th:text="${appointment.status}">Status</span>
+                    </div>
+                    <div class="appointment-details">
+                        <p class="date" th:text="${#temporals.format(appointment.appointmentTime, 'EEEE, MMMM d, yyyy')}">Date</p>
+                        <p class="time" th:text="${#temporals.format(appointment.appointmentTime, 'h:mm a')}">Time</p>
+                        <p class="reason" th:text="${appointment.reason}">Reason</p>
+                        <p th:if="${appointment.cancellationReason}" class="cancellation-reason" 
+                           th:text="'Cancellation Reason: ' + ${appointment.cancellationReason}">Cancellation Reason</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reschedule Modal -->
+        <div id="rescheduleModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Reschedule Appointment</h2>
+                <form id="rescheduleForm" th:action="@{/api/appointments/reschedule}" method="POST">
+                    <input type="hidden" name="appointmentId" id="rescheduleAppointmentId" />
+                    <div class="form-group">
+                        <label for="newDate">New Date</label>
+                        <input type="date" id="newDate" name="date" required
+                               th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                    </div>
+                    <div class="form-group">
+                        <label for="newTime">New Time</label>
+                        <select id="newTime" name="time" required>
+                            <option value="">Select a time slot</option>
+                            <!-- Time slots will be populated dynamically -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Confirm Reschedule</button>
+                </form>
+            </div>
+        </div>
+    </th:block>
+</body>
+</html> 
