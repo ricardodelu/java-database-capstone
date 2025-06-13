@@ -4,7 +4,7 @@ import { DoctorCard } from './components/DoctorCard.js';
 
 class AdminDashboard {
     constructor() {
-        this.contentDiv = document.getElementById('doctorsList');
+        this.contentDiv = document.getElementById('doctorList');
         this.searchBar = document.getElementById('searchBar');
         this.timeFilter = document.getElementById('timeFilter');
         this.specialtyFilter = document.getElementById('specialtyFilter');
@@ -36,8 +36,20 @@ class AdminDashboard {
 
     async loadDoctors() {
         try {
-            const doctors = await doctorService.getAllDoctors();
-            this.renderDoctorCards(doctors);
+            const response = await fetch('/admin/dashboard');
+            if (!response.ok) {
+                throw new Error('Failed to fetch doctors');
+            }
+            const data = await response.json();
+            console.log('Dashboard data:', data); // Debug log
+            
+            // The admin dashboard API returns {success: true, doctors: [...]}
+            if (data.success && data.doctors) {
+                this.renderDoctorCards(data.doctors);
+            } else {
+                console.error('No doctors data in response:', data);
+                this.showError('No doctors data available.');
+            }
         } catch (error) {
             console.error('Failed to load doctors:', error);
             this.showError('Failed to load doctors. Please try again.');

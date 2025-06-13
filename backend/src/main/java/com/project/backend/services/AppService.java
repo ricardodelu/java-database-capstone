@@ -58,12 +58,24 @@ public class AppService {
     public Map<String, Object> getDoctors() {
         Map<String, Object> response = new HashMap<>();
         try {
+            System.out.println("=== AppService.getDoctors() called ===");
             List<Doctor> doctors = doctorRepository.findAll();
+            System.out.println("Found " + doctors.size() + " doctors in database");
+            
+            // Log first few doctors for debugging
+            for (int i = 0; i < Math.min(3, doctors.size()); i++) {
+                Doctor doc = doctors.get(i);
+                System.out.println("Doctor " + (i+1) + ": " + doc.getName() + " (" + doc.getSpecialty() + ")");
+            }
+            
             response.put("success", true);
             response.put("doctors", doctors);
+            System.out.println("Response prepared successfully");
         } catch (Exception e) {
+            System.err.println("Error fetching doctors: " + e.getMessage());
+            e.printStackTrace();
             response.put("success", false);
-            response.put("error", "Failed to fetch doctors");
+            response.put("error", "Failed to fetch doctors: " + e.getMessage());
         }
         return response;
     }

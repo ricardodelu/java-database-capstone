@@ -3,7 +3,7 @@ package com.project.backend.models;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -40,14 +40,15 @@ public class Doctor {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     @NotNull(message = "Phone number cannot be null")
-    @Pattern(regexp = "\\d{10}", message = "Phone number must be 10 digits")
+    @Pattern(regexp = "\\d{3}-\\d{3}-\\d{4}", message = "Phone number must be in format XXX-XXX-XXXX")
+    @Column(name = "phone_number")
     private String phoneNumber;
     @ElementCollection
     private List<String> availableTimes;
-    @NotNull(message = "Specialization cannot be null")
+    
     @Size(max = 100, message = "Specialization must be less than 100 characters")
     private String specialization;
-    @NotNull(message = "License number cannot be null")
+    
     @Size(min = 5, max = 20, message = "License number must be between 5 and 20 characters")
     private String licenseNumber;
     

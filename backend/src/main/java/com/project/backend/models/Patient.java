@@ -36,7 +36,7 @@ public class Patient {
     private String password;
 
     @NotNull(message = "Phone number cannot be null")
-    @Pattern(regexp = "^\\d{10}$", message = "Phone number must be 10 digits")
+    @Pattern(regexp = "^\\d{3}-\\d{3}-\\d{4}$", message = "Phone number must be in format XXX-XXX-XXXX")
     private String phoneNumber;
 
     @NotNull(message = "Address cannot be null")
