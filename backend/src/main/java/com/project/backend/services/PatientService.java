@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpStatus;
 
 import com.project.backend.models.Patient;
@@ -32,12 +31,6 @@ public class PatientService {
     
     @Autowired
     private PrescriptionRepo prescriptionRepo;
-    
-    @Autowired
-    private TokenValidationService tokenService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Transactional
     public ResponseEntity<?> registerPatient(PatientDTO patientDTO) {
@@ -53,14 +46,12 @@ public class PatientService {
             patient.setEmail(patientDTO.getEmail());
             patient.setPhoneNumber(patientDTO.getPhoneNumber());
             patient.setAddress(patientDTO.getAddress());
-            patient.setPassword(passwordEncoder.encode(patientDTO.getPassword()));
+            patient.setPassword(patientDTO.getPassword()); // Store password as-is
 
-            patientRepo.save(patient);
+            patient = patientRepo.save(patient);
 
-            String token = tokenService.generateToken(patient.getEmail(), "patient");
             return ResponseEntity.ok(Map.of(
                 "message", "Registration successful",
-                "token", token,
                 "patient", convertToDTO(patient)
             ));
 
@@ -78,20 +69,40 @@ public class PatientService {
             Patient patient = patientRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
-            if (!passwordEncoder.matches(password, patient.getPassword())) {
+            if (!password.equals(patient.getPassword())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid credentials"));
             }
 
-            String token = tokenService.generateToken(email, "patient");
             return ResponseEntity.ok(Map.of(
-                "token", token,
                 "patient", convertToDTO(patient)
             ));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<?> updatePatientProfile(String email, PatientDTO patientDTO) {
+        try {
+            Patient patient = patientRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            if (patientDTO.getName() != null) patient.setName(patientDTO.getName());
+            if (patientDTO.getPhoneNumber() != null) patient.setPhoneNumber(patientDTO.getPhoneNumber());
+            if (patientDTO.getAddress() != null) patient.setAddress(patientDTO.getAddress());
+            if (patientDTO.getPassword() != null) {
+                patient.setPassword(patientDTO.getPassword()); // Store password as-is
+            }
+
+            patientRepo.save(patient);
+            return ResponseEntity.ok(convertToDTO(patient));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to update profile: " + e.getMessage()));
         }
     }
 
@@ -105,29 +116,6 @@ public class PatientService {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch profile: " + e.getMessage()));
-        }
-    }
-
-    @Transactional
-    public ResponseEntity<?> updatePatientProfile(String email, PatientDTO patientDTO) {
-        try {
-            Patient patient = patientRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-
-            // Update only non-null fields
-            if (patientDTO.getName() != null) patient.setName(patientDTO.getName());
-            if (patientDTO.getPhoneNumber() != null) patient.setPhoneNumber(patientDTO.getPhoneNumber());
-            if (patientDTO.getAddress() != null) patient.setAddress(patientDTO.getAddress());
-            if (patientDTO.getPassword() != null) {
-                patient.setPassword(passwordEncoder.encode(patientDTO.getPassword()));
-            }
-
-            patientRepo.save(patient);
-            return ResponseEntity.ok(convertToDTO(patient));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Failed to update profile: " + e.getMessage()));
         }
     }
 

@@ -12,7 +12,6 @@ import com.project.backend.repositories.DoctorRepo;
 import com.project.backend.repositories.PatientRepo;
 import com.project.backend.models.Doctor;
 import com.project.backend.models.Patient;
-import com.project.backend.services.TokenValidationService;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.List;
@@ -29,17 +28,11 @@ public class PrescriptionService {
     
     @Autowired
     private PatientRepo patientRepository;
-    
-    @Autowired
-    private TokenValidationService tokenService;
 
     @Transactional
     public ResponseEntity<?> savePrescription(Prescription prescription) {
         try {
-            // Set creation time
             prescription.prePersist();
-            
-            // Save prescription
             Prescription saved = prescriptionRepo.save(prescription);
             
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -55,29 +48,12 @@ public class PrescriptionService {
         }
     }
 
-    public ResponseEntity<?> getPrescription(Long prescriptionId, String token) {
+    public ResponseEntity<?> getPrescription(Long prescriptionId) {
         try {
-            // Validate token
-            Map<String, String> validation = tokenService.validateToken(token, "patient");
-            if (!validation.isEmpty()) {
-                return ResponseEntity.badRequest().body(validation);
-            }
-
-            // Find prescription
             Optional<Prescription> prescription = prescriptionRepo.findById(prescriptionId);
             if (prescription.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Prescription not found"
-                ));
-            }
-
-            // Verify ownership
-            String email = tokenService.extractEmailFromToken(token);
-            Patient patient = patientRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-            if (!prescription.get().getPatient().getId().equals(patient.getId())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Unauthorized to view this prescription"
                 ));
             }
 
@@ -90,12 +66,9 @@ public class PrescriptionService {
         }
     }
 
-    public ResponseEntity<?> getPatientPrescriptions(String email) {
+    public ResponseEntity<?> getPatientPrescriptions(Long patientId) {
         try {
-            Patient patient = patientRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-
-            List<Prescription> prescriptions = prescriptionRepo.findByPatientId(patient.getId());
+            List<Prescription> prescriptions = prescriptionRepo.findByPatientId(patientId);
             return ResponseEntity.ok(Map.of("prescriptions", prescriptions));
 
         } catch (Exception e) {
@@ -105,12 +78,9 @@ public class PrescriptionService {
         }
     }
 
-    public ResponseEntity<?> getDoctorPrescriptions(String email) {
+    public ResponseEntity<?> getDoctorPrescriptions(Long doctorId) {
         try {
-            Doctor doctor = doctorRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
-
-            List<Prescription> prescriptions = prescriptionRepo.findByDoctorId(doctor.getId());
+            List<Prescription> prescriptions = prescriptionRepo.findByDoctorId(doctorId);
             return ResponseEntity.ok(Map.of("prescriptions", prescriptions));
 
         } catch (Exception e) {

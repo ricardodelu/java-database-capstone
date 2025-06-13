@@ -28,18 +28,9 @@ public class AppointmentService {
     
     @Autowired
     private PatientRepo patientRepository;
-    
-    @Autowired
-    private TokenValidationService tokenService;
 
-    public ResponseEntity<?> bookAppointment(Appointment appointment, String token) {
+    public ResponseEntity<?> bookAppointment(Appointment appointment) {
         try {
-            // Validate token and extract patient ID
-            Map<String, String> validation = tokenService.validateToken(token, "patient");
-            if (!validation.isEmpty()) {
-                return ResponseEntity.badRequest().body(validation);
-            }
-
             // Validate doctor exists
             if (!doctorRepository.existsById(appointment.getDoctor().getId())) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -57,11 +48,12 @@ public class AppointmentService {
                 ));
             }
 
-            // Set patient from token
-            String email = tokenService.extractEmailFromToken(token);
-            Patient patient = patientRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-            appointment.setPatient(patient);
+            // Validate patient exists
+            if (!patientRepository.existsById(appointment.getPatient().getId())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Patient not found"
+                ));
+            }
             
             // Save appointment
             Appointment saved = appointmentRepository.save(appointment);
@@ -77,29 +69,13 @@ public class AppointmentService {
         }
     }
 
-    public ResponseEntity<?> updateAppointment(Long appointmentId, Appointment updatedAppointment, String token) {
+    public ResponseEntity<?> updateAppointment(Long appointmentId, Appointment updatedAppointment) {
         try {
-            // Validate token
-            Map<String, String> validation = tokenService.validateToken(token, "patient");
-            if (!validation.isEmpty()) {
-                return ResponseEntity.badRequest().body(validation);
-            }
-
             // Find existing appointment
             Optional<Appointment> existingAppointment = appointmentRepository.findById(appointmentId);
             if (existingAppointment.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Appointment not found"
-                ));
-            }
-
-            // Verify ownership
-            String email = tokenService.extractEmailFromToken(token);
-            Patient patient = patientRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-            if (!existingAppointment.get().getPatient().getId().equals(patient.getId())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Unauthorized to modify this appointment"
                 ));
             }
 
@@ -132,29 +108,13 @@ public class AppointmentService {
         }
     }
 
-    public ResponseEntity<?> cancelAppointment(Long appointmentId, String token) {
+    public ResponseEntity<?> cancelAppointment(Long appointmentId) {
         try {
-            // Validate token
-            Map<String, String> validation = tokenService.validateToken(token, "patient");
-            if (!validation.isEmpty()) {
-                return ResponseEntity.badRequest().body(validation);
-            }
-
             // Find appointment
             Optional<Appointment> appointment = appointmentRepository.findById(appointmentId);
             if (appointment.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "Appointment not found"
-                ));
-            }
-
-            // Verify ownership
-            String email = tokenService.extractEmailFromToken(token);
-            Patient patient = patientRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-            if (!appointment.get().getPatient().getId().equals(patient.getId())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Unauthorized to cancel this appointment"
                 ));
             }
 
@@ -169,6 +129,23 @@ public class AppointmentService {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
                 "error", "Failed to cancel appointment: " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<?> getUpcomingAppointments(Long patientId) {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            List<Appointment> appointments = appointmentRepository.findByPatientIdAndAppointmentTimeAfter(
+                patientId, now);
+
+            appointments.sort(Comparator.comparing(Appointment::getAppointmentTime));
+
+            return ResponseEntity.ok(Map.of("appointments", appointments));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Failed to fetch upcoming appointments: " + e.getMessage()
             ));
         }
     }
@@ -206,27 +183,6 @@ public class AppointmentService {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
                 "error", "Failed to fetch available slots: " + e.getMessage()
-            ));
-        }
-    }
-
-    public ResponseEntity<?> getUpcomingAppointments(String email) {
-        try {
-            Patient patient = patientRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
-
-            LocalDateTime now = LocalDateTime.now();
-            List<Appointment> appointments = appointmentRepository.findByPatientIdAndAppointmentTimeAfter(
-                patient.getId(), now);
-
-            // Sort by appointment time
-            appointments.sort(Comparator.comparing(Appointment::getAppointmentTime));
-
-            return ResponseEntity.ok(Map.of("appointments", appointments));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to fetch upcoming appointments: " + e.getMessage()
             ));
         }
     }

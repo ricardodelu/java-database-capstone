@@ -52,7 +52,10 @@ class LoginHandler {
             localStorage.setItem('userRole', type.replace('Login', ''));
             
             // Redirect based on role
-            window.location.href = `/${type.replace('Login', '')}/dashboard`;
+            const role = type.replace('Login', '');
+            const redirectUrl = `${window.location.origin}/${role}/dashboard`;
+            console.log('Redirecting to:', redirectUrl); // Debug log
+            window.location.replace(redirectUrl);
         } catch (error) {
             console.error('Login failed:', error);
             alert('Login failed. Please try again.');

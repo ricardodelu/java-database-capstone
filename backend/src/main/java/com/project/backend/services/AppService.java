@@ -2,9 +2,9 @@ package com.project.backend.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.repositories.AdminRepo;
@@ -12,15 +12,16 @@ import com.project.backend.repositories.DoctorRepo;
 import com.project.backend.repositories.PatientRepo;
 import com.project.backend.repositories.AppointmentRepo;
 import com.project.backend.repositories.PrescriptionRepo;
-import com.project.backend.models.Admin;
+
 import com.project.backend.models.Doctor;
 import com.project.backend.models.Patient;
 import com.project.backend.models.Appointment;
 import com.project.backend.models.Prescription;
+import com.project.backend.models.Admin;
 import com.project.backend.dtos.DoctorDTO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -29,10 +30,7 @@ import java.util.Optional;
 @Service
 @Transactional
 public class AppService {
-    
-    @Autowired
-    private TokenValidationService tokenService;
-    
+        
     @Autowired
     private AdminRepo adminRepository;
 
@@ -40,11 +38,7 @@ public class AppService {
     private DoctorRepo doctorRepository;
 
     @Autowired
-    private PatientRepo patientRepository;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
+    private PatientRepo patientRepository;    
     @Lazy
     @Autowired
     private DoctorService doctorService;
@@ -57,57 +51,9 @@ public class AppService {
     private AppointmentRepo appointmentRepo;
 
     @Autowired
-    private PrescriptionRepo prescriptionRepo;
+    private PrescriptionRepo prescriptionRepo;   
+
     
-    public Map<String, String> validateToken(String token, String role) {
-        try {
-            return tokenService.validateToken(token, role);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Invalid or expired token");
-            return error;
-        }
-    }
-
-    public ResponseEntity<?> validateAdmin(Map<String, String> credentials) {
-        try {
-            String username = credentials.get("username");
-            String password = credentials.get("password");
-
-            // Log DB connection info and login attempt
-            System.err.println("[DEBUG] DB URL: " + System.getProperty("spring.datasource.url"));
-            System.err.println("[DEBUG] DB User: " + System.getProperty("spring.datasource.username"));
-            System.err.println("[DEBUG] Attempting login for username: " + username);
-
-            Admin admin = adminRepository.findByUsername(username)
-                .orElse(null);
-
-            System.err.println("[DEBUG] Admin lookup result: " + (admin != null ? "FOUND" : "NOT FOUND"));
-            if (admin != null) {
-                System.err.println("[DEBUG] Username in DB: " + admin.getUsername());
-                System.err.println("[DEBUG] Password hash in DB: " + admin.getPassword());
-                System.err.println("[DEBUG] Password matches: " + passwordEncoder.matches(password, admin.getPassword()));
-            }
-
-            if (admin != null && passwordEncoder.matches(password, admin.getPassword())) {
-                String token = tokenService.generateToken(username, "admin");
-                return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "role", "admin"
-                ));
-            }
-
-            return ResponseEntity.badRequest().body(Map.of(
-                "error", "Invalid credentials"
-            ));
-        } catch (Exception e) {
-            System.err.println("AppService.validateAdmin caught an exception:");
-            e.printStackTrace(System.err);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Authentication failed"
-            ));
-        }
-    }
 
     public Map<String, Object> getDoctors() {
         Map<String, Object> response = new HashMap<>();
@@ -132,47 +78,10 @@ public class AppService {
             return false;
         }
     }
+    
 
-    public ResponseEntity<?> validatePatientLogin(Map<String, String> credentials) {
-        try {
-            String email = credentials.get("email");
-            String password = credentials.get("password");
-
-            Patient patient = patientRepository.findByEmail(email)
-                .orElse(null);
-
-            if (patient != null && patient.getPassword().equals(password)) {
-                String token = tokenService.generateToken(email, "patient");
-                return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "role", "patient"
-                ));
-            }
-
-            return ResponseEntity.badRequest().body(Map.of(
-                "error", "Invalid credentials"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Authentication failed"
-            ));
-        }
-    }
-
-    public ResponseEntity<?> getPatientAppointments(String token) {
-        try {
-            Map<String, String> validation = validateToken(token, "patient");
-            if (!validation.isEmpty()) {
-                return ResponseEntity.badRequest().body(validation);
-            }
-
-            String email = tokenService.extractEmailFromToken(token);
-            return patientService.getPatientAppointments(email);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to fetch appointments"
-            ));
-        }
+    public ResponseEntity<?> getPatientAppointments(String email) {
+            return patientService.getPatientAppointments(email);       
     }
 
     public List<Doctor> getAllDoctors() {
@@ -244,5 +153,39 @@ public class AppService {
             return prescriptionRepo.findByPatientId(Long.parseLong(patientId));
         }
         return prescriptionRepo.findAll();
+    }
+
+    public ResponseEntity<?> validateAdmin(Map<String, String> credentials) {
+        try {
+            String username = credentials.get("username");
+            System.out.println("Validating admin: " + username); // Debug log
+            
+            Optional<Admin> admin = adminRepository.findByUsername(username);
+            
+            if (admin.isEmpty()) {
+                System.out.println("Admin not found: " + username); // Debug log
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid credentials"));
+            }
+
+            // Simple password check
+            if (!admin.get().getPassword().equals(credentials.get("password"))) {
+                System.out.println("Invalid password for admin: " + username); // Debug log
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid credentials"));
+            }
+
+            System.out.println("Admin login successful: " + username); // Debug log
+            return ResponseEntity.ok(Map.of(
+                "message", "Login successful",
+                "role", "admin",
+                "username", admin.get().getUsername(),
+                "token", "dummy-token-" + System.currentTimeMillis() // Add a dummy token
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
     }
 }

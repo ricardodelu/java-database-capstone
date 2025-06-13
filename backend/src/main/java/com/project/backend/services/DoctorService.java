@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpStatus;
 
 import com.project.backend.models.Doctor;
@@ -40,19 +39,13 @@ public class DoctorService {
     @Autowired
     private PrescriptionRepo prescriptionRepo;
     
-    @Autowired
-    private TokenValidationService tokenService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Transactional
     public ResponseEntity<?> registerDoctor(DoctorDTO doctorDTO) {
         try {
             if (doctorRepo.existsByEmail(doctorDTO.getEmail())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Email already registered"
-                ));
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Email already registered"));
             }
 
             Doctor doctor = new Doctor();
@@ -61,18 +54,17 @@ public class DoctorService {
             doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
             doctor.setSpecialization(doctorDTO.getSpecialization());
             doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
-            doctor.setPassword(passwordEncoder.encode(doctorDTO.getPassword()));
-
-            doctorRepo.save(doctor);
-
-            String token = tokenService.generateToken(doctor.getEmail(), "doctor");
-            return ResponseEntity.ok(Map.of(
-                "message", "Registration successful",
-                "token", token,
-                "doctor", convertToDTO(doctor)
-            ));
-
-        } catch (Exception e) {
+            doctor.setPassword(doctorDTO.getPassword()); // Store password as-is
+            
+            doctor = doctorRepo.save(doctor);
+            
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of(
+                    "message", "Doctor registered successfully",
+                    "doctor", convertToDTO(doctor)
+                ));
+        }    
+        catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Registration failed: " + e.getMessage()));
         }
@@ -86,14 +78,13 @@ public class DoctorService {
             Doctor doctor = doctorRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
-            if (!passwordEncoder.matches(password, doctor.getPassword())) {
+            // Simple password check
+            if (!password.equals(doctor.getPassword())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid credentials"));
             }
 
-            String token = tokenService.generateToken(email, "doctor");
             return ResponseEntity.ok(Map.of(
-                "token", token,
                 "doctor", convertToDTO(doctor)
             ));
 
@@ -128,7 +119,7 @@ public class DoctorService {
             if (doctorDTO.getSpecialization() != null) doctor.setSpecialization(doctorDTO.getSpecialization());
             if (doctorDTO.getLicenseNumber() != null) doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
             if (doctorDTO.getPassword() != null) {
-                doctor.setPassword(passwordEncoder.encode(doctorDTO.getPassword()));
+                doctor.setPassword(doctorDTO.getPassword()); // Store password as-is
             }
 
             doctorRepo.save(doctor);

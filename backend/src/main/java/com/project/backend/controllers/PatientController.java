@@ -2,7 +2,6 @@ package com.project.backend.controllers;
 
 import com.project.backend.dtos.PatientDTO;
 import com.project.backend.services.PatientService;
-import com.project.backend.services.TokenValidationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +16,6 @@ public class PatientController {
 
     @Autowired
     private PatientService patientService;
-
-    @Autowired
-    private TokenValidationService tokenService;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerPatient(@Valid @RequestBody PatientDTO patientDTO) {
@@ -46,10 +42,9 @@ public class PatientController {
         }
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String token) {
+    @GetMapping("/profile/{email}")
+    public ResponseEntity<?> getProfile(@PathVariable String email) {
         try {
-            String email = tokenService.extractEmailFromToken(token);
             return patientService.getPatientProfile(email);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -57,12 +52,11 @@ public class PatientController {
         }
     }
 
-    @PutMapping("/profile")
+    @PutMapping("/profile/{email}")
     public ResponseEntity<?> updateProfile(
-            @RequestHeader("Authorization") String token,
+            @PathVariable String email,
             @Valid @RequestBody PatientDTO patientDTO) {
         try {
-            String email = tokenService.extractEmailFromToken(token);
             return patientService.updatePatientProfile(email, patientDTO);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -70,10 +64,9 @@ public class PatientController {
         }
     }
 
-    @GetMapping("/appointments")
-    public ResponseEntity<?> getAppointments(@RequestHeader("Authorization") String token) {
+    @GetMapping("/{email}/appointments")
+    public ResponseEntity<?> getAppointments(@PathVariable String email) {
         try {
-            String email = tokenService.extractEmailFromToken(token);
             return patientService.getPatientAppointments(email);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -81,34 +74,13 @@ public class PatientController {
         }
     }
 
-    @GetMapping("/prescriptions")
-    public ResponseEntity<?> getPrescriptions(@RequestHeader("Authorization") String token) {
+    @GetMapping("/{email}/prescriptions")
+    public ResponseEntity<?> getPrescriptions(@PathVariable String email) {
         try {
-            String email = tokenService.extractEmailFromToken(token);
             return patientService.getPatientPrescriptions(email);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch prescriptions: " + e.getMessage()));
         }
     }
-
-    @GetMapping("/validate")
-    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String token) {
-        try {
-            Map<String, String> validation = tokenService.validateToken(token, "patient");
-            if (validation.isEmpty()) {
-                String email = tokenService.extractEmailFromToken(token);
-                return ResponseEntity.ok(Map.of(
-                    "valid", true,
-                    "role", "patient",
-                    "email", email
-                ));
-            }
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("valid", false, "error", validation.get("error")));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Token validation failed: " + e.getMessage()));
-        }
-    }
-} 
+}

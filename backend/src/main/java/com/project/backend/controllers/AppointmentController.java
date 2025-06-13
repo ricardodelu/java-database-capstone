@@ -1,7 +1,6 @@
 package com.project.backend.controllers;
 
 import com.project.backend.services.AppointmentService;
-import com.project.backend.services.TokenValidationService;
 import com.project.backend.models.Appointment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +16,10 @@ public class AppointmentController {
     @Autowired
     private AppointmentService appointmentService;
 
-    @Autowired
-    private TokenValidationService tokenService;
-
     @PostMapping
-    public ResponseEntity<?> createAppointment(
-            @RequestHeader("Authorization") String token,
-            @RequestBody Appointment appointment) {
+    public ResponseEntity<?> createAppointment(@RequestBody Appointment appointment) {
         try {
-            return appointmentService.bookAppointment(appointment, token);
+            return appointmentService.bookAppointment(appointment);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to create appointment: " + e.getMessage()));
@@ -33,11 +27,9 @@ public class AppointmentController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelAppointment(
-            @RequestHeader("Authorization") String token,
-            @PathVariable Long id) {
+    public ResponseEntity<?> cancelAppointment(@PathVariable Long id) {
         try {
-            return appointmentService.cancelAppointment(id, token);
+            return appointmentService.cancelAppointment(id);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to cancel appointment: " + e.getMessage()));
@@ -57,11 +49,9 @@ public class AppointmentController {
     }
 
     @GetMapping("/upcoming")
-    public ResponseEntity<?> getUpcomingAppointments(
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> getUpcomingAppointments(@RequestParam Long patientId) {
         try {
-            String email = tokenService.extractEmailFromToken(token);
-            return appointmentService.getUpcomingAppointments(email);
+            return appointmentService.getUpcomingAppointments(patientId);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch upcoming appointments: " + e.getMessage()));
@@ -70,15 +60,14 @@ public class AppointmentController {
 
     @GetMapping("/history")
     public ResponseEntity<?> getAppointmentHistory(
-            @RequestHeader("Authorization") String token,
+            @RequestParam String email,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         try {
-            String email = tokenService.extractEmailFromToken(token);
             return appointmentService.getAppointmentHistory(email, startDate, endDate);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch appointment history: " + e.getMessage()));
         }
     }
-} 
+}
