@@ -49,7 +49,8 @@ class DoctorDashboardService {
                 const errorText = await response.text();
                 throw new Error(`Failed to fetch appointments: ${response.status} ${errorText}`);
             }
-            this.appointments = await response.json();
+            const data = await response.json();
+            this.appointments = data.appointments;
             this.filterAndRender();
         } catch (error) {
             console.error('Error loading appointments:', error);
