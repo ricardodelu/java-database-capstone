@@ -26,9 +26,9 @@ public class DoctorDTO {
     @Pattern(regexp = "^\\d{10}$", message = "Phone number must be 10 digits")
     private String phoneNumber;
     
-    @NotNull(message = "Specialization cannot be null")
-    @Size(max = 100, message = "Specialization must be less than 100 characters")
-    private String specialization;
+    @NotNull(message = "Specialty cannot be null")
+    @Size(min = 3, max = 100, message = "Specialty must be between 3 and 100 characters")
+    private String specialty;
     
     @NotNull(message = "License number cannot be null")
     @Size(min = 5, max = 20, message = "License number must be between 5 and 20 characters")

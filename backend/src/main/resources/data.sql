@@ -4,17 +4,17 @@ INSERT IGNORE INTO admin (username, password) VALUES
 ('testadmin', 'password');
 
 -- Sample Doctor Data
-INSERT IGNORE INTO doctor (email, name, password, phone_number, specialty) VALUES
-('dr.adams@example.com', 'Dr. Emily Adams', 'pass12345', '555-101-2020', 'Cardiology'),
-('dr.johnson@example.com', 'Dr. Mark Johnson', 'secure4567', '555-202-3030', 'Neurology'),
-('dr.lee@example.com', 'Dr. Sarah Lee', 'leePass987', '555-303-4040', 'Orthopedics'),
-('dr.wilson@example.com', 'Dr. Tom Wilson', 'w!ls0nPwd', '555-404-5050', 'Pediatrics'),
-('dr.brown@example.com', 'Dr. Alice Brown', 'brownie123', '555-505-6060', 'Dermatology'),
-('dr.taylor@example.com', 'Dr. Taylor Grant', 'taylor321', '555-606-7070', 'Cardiology'),
-('dr.white@example.com', 'Dr. Sam White', 'whiteSecure1', '555-707-8080', 'Neurology'),
-('dr.clark@example.com', 'Dr. Emma Clark', 'clarkPass456', '555-808-9090', 'Orthopedics'),
-('dr.davis@example.com', 'Dr. Olivia Davis', 'davis789', '555-909-0101', 'Pediatrics'),
-('dr.miller@example.com', 'Dr. Henry Miller', 'millertime!', '555-010-1111', 'Dermatology');
+INSERT IGNORE INTO doctor (email, name, password, phone_number, specialty, license_number) VALUES
+('dr.adams@example.com', 'Dr. Emily Adams', 'pass12345', '5551012020', 'Cardiology', 'LIC-112233'),
+('dr.johnson@example.com', 'Dr. Mark Johnson', 'secure4567', '5552023030', 'Neurology', 'LIC-445566'),
+('dr.lee@example.com', 'Dr. Sarah Lee', 'leePass987', '5553034040', 'Orthopedics', 'LIC-778899'),
+('dr.wilson@example.com', 'Dr. Tom Wilson', 'w!ls0nPwd', '5554045050', 'Pediatrics', 'LIC-101112'),
+('dr.brown@example.com', 'Dr. Alice Brown', 'brownie123', '5555056060', 'Dermatology', 'LIC-131415'),
+('dr.taylor@example.com', 'Dr. Taylor Grant', 'taylor321', '5556067070', 'Cardiology', 'LIC-161718'),
+('dr.white@example.com', 'Dr. Sam White', 'whiteSecure1', '5557078080', 'Neurology', 'LIC-192021'),
+('dr.clark@example.com', 'Dr. Emma Clark', 'clarkPass456', '5558089090', 'Orthopedics', 'LIC-222324'),
+('dr.davis@example.com', 'Dr. Olivia Davis', 'davis789', '5559090101', 'Pediatrics', 'LIC-252627'),
+('dr.miller@example.com', 'Dr. Henry Miller', 'millertime!', '5550101111', 'Dermatology', 'LIC-282930');
 
 -- Sample Patient Data
 INSERT IGNORE INTO patient (address, email, name, password, phone_number) VALUES
@@ -23,3 +23,10 @@ INSERT IGNORE INTO patient (address, email, name, password, phone_number) VALUES
 ('303 Pine Ave, Villageton', 'emily.rose@example.com', 'Emily Rose', 'emilyPass99', '888-333-3333'),
 ('404 Birch Ln, Metropolis', 'michael.j@example.com', 'Michael Jordan', 'airmj23', '888-444-4444'),
 ('505 Cedar Blvd, Springfield', 'olivia.m@example.com', 'Olivia Moon', 'moonshine12', '888-555-5555');
+-- Sample Appointments
+INSERT INTO appointment (doctor_id, patient_id, appointment_time, status) VALUES
+(1, 1, '2025-07-10 09:00:00', 'SCHEDULED'),
+(1, 2, '2025-07-10 10:30:00', 'COMPLETED'),
+(1, 3, '2025-07-11 14:00:00', 'SCHEDULED'),
+(2, 4, '2025-07-12 11:00:00', 'SCHEDULED'),
+(2, 5, '2025-07-12 15:30:00', 'CANCELLED');

@@ -52,7 +52,7 @@ public class DoctorService {
             doctor.setName(doctorDTO.getName());
             doctor.setEmail(doctorDTO.getEmail());
             doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
-            doctor.setSpecialization(doctorDTO.getSpecialization());
+            doctor.setSpecialty(doctorDTO.getSpecialty());
             doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
             doctor.setPassword(doctorDTO.getPassword()); // Store password as-is
             
@@ -116,7 +116,7 @@ public class DoctorService {
             // Update only non-null fields
             if (doctorDTO.getName() != null) doctor.setName(doctorDTO.getName());
             if (doctorDTO.getPhoneNumber() != null) doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
-            if (doctorDTO.getSpecialization() != null) doctor.setSpecialization(doctorDTO.getSpecialization());
+            if (doctorDTO.getSpecialty() != null) doctor.setSpecialty(doctorDTO.getSpecialty());
             if (doctorDTO.getLicenseNumber() != null) doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
             if (doctorDTO.getPassword() != null) {
                 doctor.setPassword(doctorDTO.getPassword()); // Store password as-is
@@ -178,8 +178,8 @@ public class DoctorService {
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
             Prescription prescription = new Prescription();
-            prescription.setDoctor(doctor);
-            prescription.setPatient(patient);
+            prescription.setDoctorId(doctor.getId());
+            prescription.setPatientId(patient.getId());
             prescription.setMedication((String) prescriptionData.get("medication"));
             prescription.setDosage((String) prescriptionData.get("dosage"));
             prescription.setDuration((String) prescriptionData.get("duration"));
@@ -335,7 +335,7 @@ public class DoctorService {
         dto.setName(doctor.getName());
         dto.setEmail(doctor.getEmail());
         dto.setPhoneNumber(doctor.getPhoneNumber());
-        dto.setSpecialization(doctor.getSpecialization());
+        dto.setSpecialty(doctor.getSpecialty());
         dto.setLicenseNumber(doctor.getLicenseNumber());
         return dto;
     }
@@ -356,17 +356,20 @@ public class DoctorService {
     }
 
     private PrescriptionDTO convertToPrescriptionDTO(Prescription prescription) {
+        Patient patient = patientRepo.findById(prescription.getPatientId()).orElse(null);
+        Doctor doctor = doctorRepo.findById(prescription.getDoctorId()).orElse(null);
+
         PrescriptionDTO dto = new PrescriptionDTO();
         dto.setId(prescription.getId());
-        dto.setPatientId(prescription.getPatient().getId());
-        dto.setDoctorId(prescription.getDoctor().getId());
+        dto.setPatientId(prescription.getPatientId());
+        dto.setDoctorId(prescription.getDoctorId());
         dto.setMedication(prescription.getMedication());
         dto.setDosage(prescription.getDosage());
         dto.setDuration(prescription.getDuration());
         dto.setNotes(prescription.getNotes());
         dto.setPrescribedAt(prescription.getPrescribedAt());
-        dto.setPatientName(prescription.getPatient().getName());
-        dto.setDoctorName(prescription.getDoctor().getName());
+        dto.setPatientName(patient != null ? patient.getName() : "N/A");
+        dto.setDoctorName(doctor != null ? doctor.getName() : "N/A");
         return dto;
     }
 }

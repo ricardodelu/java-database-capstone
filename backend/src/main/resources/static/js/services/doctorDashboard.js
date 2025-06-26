@@ -1,217 +1,176 @@
-// Import dependencies
-import { getAuthToken } from '../util.js';
-import { renderHeader, renderFooter } from '../render.js';
+class DoctorDashboardService {
+    constructor() {
+        this.appointments = [];
+        this.init();
+    }
 
-// Constants
-const API_BASE_URL = '/api';
-const ENDPOINTS = {
-    PATIENTS: `${API_BASE_URL}/patients`,
-    APPOINTMENTS: `${API_BASE_URL}/appointments`,
-    PRESCRIPTIONS: `${API_BASE_URL}/prescriptions`,
-};
+    init() {
+        // DOM Elements
+        this.tableBody = document.getElementById('patientTableBody');
+        this.searchBar = document.getElementById('searchBar');
+        this.dateFilter = document.getElementById('dateFilter');
+        this.statusFilter = document.getElementById('statusFilter');
+        this.todayBtn = document.getElementById('todayAppointments');
+        this.refreshBtn = document.getElementById('refreshBtn');
+        this.noPatientsDiv = document.getElementById('noPatients');
 
-// State
-let currentDoctorId = null;
-let currentFilter = 'today';
-let currentDate = new Date().toISOString().split('T')[0];
+        // Modal Elements
+        this.modal = document.getElementById('prescriptionModal');
+        this.closeModalBtn = this.modal.querySelector('.close');
+        this.prescriptionForm = document.getElementById('prescriptionForm');
+        this.patientIdInput = document.getElementById('patientId');
 
-// DOM Elements
-const searchBar = document.getElementById('searchBar');
-const todayAppointmentsBtn = document.getElementById('todayAppointments');
-const dateFilter = document.getElementById('dateFilter');
-const statusFilter = document.getElementById('statusFilter');
-const patientTableBody = document.getElementById('patientTableBody');
-const noPatients = document.getElementById('noPatients');
-const refreshBtn = document.getElementById('refreshBtn');
-const prescriptionModal = document.getElementById('prescriptionModal');
-const patientDetailsModal = document.getElementById('patientDetailsModal');
-const prescriptionForm = document.getElementById('prescriptionForm');
+        this.addEventListeners();
+        this.loadAppointments();
+    }
 
-// Initialize the dashboard
-async function initializeDashboard() {
-    try {
-        // Render header and footer
-        await renderHeader();
-        await renderFooter();
+    addEventListeners() {
+        this.searchBar.addEventListener('input', () => this.filterAndRender());
+        this.dateFilter.addEventListener('change', () => this.filterAndRender());
+        this.statusFilter.addEventListener('change', () => this.filterAndRender());
+        this.todayBtn.addEventListener('click', () => this.showTodaysAppointments());
+        this.refreshBtn.addEventListener('click', () => this.loadAppointments());
+        this.closeModalBtn.addEventListener('click', () => this.closeModal());
+        this.prescriptionForm.addEventListener('submit', (e) => this.handlePrescriptionSubmit(e));
+    }
 
-        // Get doctor ID from token
-        const token = getAuthToken();
-        if (!token) {
-            window.location.href = '/login';
+    async loadAppointments() {
+        try {
+            const userEmail = localStorage.getItem('userEmail');
+            if (!userEmail) {
+                console.error('User email not found in localStorage. Cannot fetch appointments.');
+                this.showAlert('Could not verify user. Please log in again.', 'error');
+                return;
+            }
+            const response = await fetch(`/api/doctors/${userEmail}/appointments`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch appointments.');
+            }
+            this.appointments = await response.json();
+            this.filterAndRender();
+        } catch (error) {
+            console.error('Error loading appointments:', error);
+            this.showError('Could not load appointments.');
+        }
+    }
+
+    filterAndRender() {
+        const searchTerm = this.searchBar.value.toLowerCase();
+        const selectedDate = this.dateFilter.value;
+        const selectedStatus = this.statusFilter.value;
+
+        let filtered = this.appointments.filter(appt => {
+            const patientName = appt.patient?.name?.toLowerCase() || '';
+            const patientId = appt.patient?.id?.toString() || '';
+            const appointmentDate = appt.appointmentTime.split('T')[0];
+
+            const matchesSearch = patientName.includes(searchTerm) || patientId.includes(searchTerm);
+            const matchesDate = !selectedDate || appointmentDate === selectedDate;
+            const matchesStatus = !selectedStatus || appt.status.toLowerCase() === selectedStatus;
+
+            return matchesSearch && matchesDate && matchesStatus;
+        });
+
+        this.renderAppointments(filtered);
+    }
+
+    renderAppointments(appointmentsToRender) {
+        this.tableBody.innerHTML = '';
+        if (appointmentsToRender.length === 0) {
+            this.noPatientsDiv.style.display = 'block';
             return;
         }
+        this.noPatientsDiv.style.display = 'none';
 
-        // Set up event listeners
-        setupEventListeners();
+        appointmentsToRender.forEach(appt => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${appt.patient.id}</td>
+                <td>${appt.patient.name}</td>
+                <td>${appt.patient.phoneNumber || 'N/A'}</td>
+                <td>${appt.patient.email}</td>
+                <td>${new Date(appt.appointmentTime).toLocaleString()}</td>
+                <td><span class="status status-${appt.status.toLowerCase()}">${appt.status}</span></td>
+                <td>
+                    <button class="action-btn add-prescription-btn" data-patient-id="${appt.patient.id}">Prescribe</button>
+                </td>
+            `;
+            this.tableBody.appendChild(row);
+        });
 
-        // Load initial data
-        await loadPatients();
-    } catch (error) {
-        console.error('Failed to initialize dashboard:', error);
-        showError('Failed to initialize dashboard. Please try refreshing the page.');
+        // Add event listeners to new buttons
+        this.tableBody.querySelectorAll('.add-prescription-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const patientId = e.target.dataset.patientId;
+                this.openModal(patientId);
+            });
+        });
+    }
+
+    showTodaysAppointments() {
+        const today = new Date().toISOString().split('T')[0];
+        this.dateFilter.value = today;
+        this.filterAndRender();
+    }
+
+    openModal(patientId) {
+        this.patientIdInput.value = patientId;
+        this.modal.style.display = 'block';
+    }
+
+    closeModal() {
+        this.modal.style.display = 'none';
+        this.prescriptionForm.reset();
+    }
+
+    async handlePrescriptionSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(this.prescriptionForm);
+        const prescriptionData = {
+            patientId: formData.get('patientId'),
+            medication: formData.get('medication'),
+            dosage: formData.get('dosage'),
+            instructions: formData.get('instructions')
+        };
+
+        try {
+            const response = await fetch('/api/prescriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(prescriptionData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add prescription.');
+            }
+
+            this.showSuccess('Prescription added successfully!');
+            this.closeModal();
+        } catch (error) {
+            console.error('Error adding prescription:', error);
+            this.showError(error.message);
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        // A simple alert, can be replaced with a more sophisticated notification system
+        alert(`${type.toUpperCase()}: ${message}`);
+    }
+
+    showError(message) {
+        this.showAlert(message, 'error');
+    }
+
+    showSuccess(message) {
+        this.showAlert(message, 'success');
     }
 }
 
-// Set up event listeners
-function setupEventListeners() {
-    // Search functionality
-    searchBar.addEventListener('input', debounce(handleSearch, 300));
-
-    // Filter buttons
-    todayAppointmentsBtn.addEventListener('click', () => {
-        currentFilter = 'today';
-        currentDate = new Date().toISOString().split('T')[0];
-        dateFilter.value = currentDate;
-        todayAppointmentsBtn.classList.add('active');
-        loadPatients();
-    });
-
-    dateFilter.addEventListener('change', (e) => {
-        currentFilter = 'date';
-        currentDate = e.target.value;
-        todayAppointmentsBtn.classList.remove('active');
-        loadPatients();
-    });
-
-    statusFilter.addEventListener('change', () => {
-        loadPatients();
-    });
-
-    // Refresh button
-    refreshBtn.addEventListener('click', loadPatients);
-
-    // Modal close buttons
-    document.querySelectorAll('.modal .close').forEach(btn => {
-        btn.addEventListener('click', () => {
-            prescriptionModal.style.display = 'none';
-            patientDetailsModal.style.display = 'none';
-        });
-    });
-
-    // Prescription form submission
-    prescriptionForm.addEventListener('submit', handlePrescriptionSubmit);
-
-    // Close modals when clicking outside
-    window.addEventListener('click', (e) => {
-        if (e.target === prescriptionModal) {
-            prescriptionModal.style.display = 'none';
-        }
-        if (e.target === patientDetailsModal) {
-            patientDetailsModal.style.display = 'none';
-        }
-    });
-}
-
-// Load patients based on current filters
-async function loadPatients() {
-    try {
-        const token = getAuthToken();
-        if (!token) {
-            window.location.href = '/login';
-            return;
-        }
-
-        const queryParams = new URLSearchParams({
-            date: currentDate,
-            status: statusFilter.value,
-            search: searchBar.value.trim(),
-        });
-
-        const response = await fetch(`${ENDPOINTS.APPOINTMENTS}?${queryParams}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const appointments = await response.json();
-        renderPatientTable(appointments);
-    } catch (error) {
-        console.error('Failed to load patients:', error);
-        showError('Failed to load patient records. Please try again.');
-    }
-}
-
-// Render patient table
-function renderPatientTable(appointments) {
-    if (!appointments || appointments.length === 0) {
-        patientTableBody.innerHTML = '';
-        noPatients.style.display = 'block';
-        return;
-    }
-
-    noPatients.style.display = 'none';
-    patientTableBody.innerHTML = appointments.map(appointment => `
-        <tr>
-            <td>${appointment.patient.id}</td>
-            <td>${appointment.patient.name}</td>
-            <td>${appointment.patient.phone || 'N/A'}</td>
-            <td>${appointment.patient.email || 'N/A'}</td>
-            <td>${formatDateTime(appointment.appointmentTime)}</td>
-            <td>
-                <span class="status-badge status-${appointment.status.toLowerCase()}">
-                    ${appointment.status}
-                </span>
-            </td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="viewPatientDetails('${appointment.patient.id}')">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="action-btn" onclick="addPrescription('${appointment.patient.id}')">
-                        <i class="fas fa-prescription"></i> Prescribe
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// View patient details
-async function viewPatientDetails(patientId) {
-    try {
-        const token = getAuthToken();
-        const response = await fetch(`${ENDPOINTS.PATIENTS}/${patientId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const patient = await response.json();
-        const detailsContainer = document.getElementById('patientDetails');
-        
-        detailsContainer.innerHTML = `
-            <dl>
-                <dt>Name:</dt>
-                <dd>${patient.name}</dd>
-                <dt>Email:</dt>
-                <dd>${patient.email || 'N/A'}</dd>
-                <dt>Phone:</dt>
-                <dd>${patient.phone || 'N/A'}</dd>
-                <dt>Date of Birth:</dt>
-                <dd>${formatDate(patient.dateOfBirth)}</dd>
-                <dt>Gender:</dt>
-                <dd>${patient.gender || 'N/A'}</dd>
-                <dt>Address:</dt>
-                <dd>${patient.address || 'N/A'}</dd>
-            </dl>
-        `;
-
-        // Store patient ID for prescription form
-        document.getElementById('patientId').value = patientId;
-        
-        // Show modal
-        patientDetailsModal.style.display = 'block';
-    } catch (error) {
-        console.error('Failed to load patient details:', error);
-        showError('Failed to load patient details. Please try again.');
+document.addEventListener('DOMContentLoaded', () => {
+    new DoctorDashboardService();
+});
     }
 }
 

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PrescriptionDTO {
-    private Long id;
+    private String id;
     
     @NotNull(message = "Patient ID cannot be null")
     private Long patientId;

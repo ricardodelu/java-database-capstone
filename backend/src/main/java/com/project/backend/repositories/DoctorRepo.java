@@ -38,6 +38,8 @@ public interface DoctorRepo extends JpaRepository<Doctor, Long> {
      */
     @Query("SELECT d FROM Doctor d WHERE LOWER(d.specialty) = LOWER(:specialty)")
     List<Doctor> findBySpecialtyIgnoreCase(@Param("specialty") String specialty);
+
+    List<Doctor> findBySpecialty(String specialty);
     
     /**
      * Check if email is already registered

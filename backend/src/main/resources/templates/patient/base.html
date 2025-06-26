@@ -11,8 +11,6 @@
     <link rel="stylesheet" th:href="@{/assets/css/patient.css}" />
     
     <!-- Common Scripts -->
-    <script th:src="@{/js/components/header.js}" type="module" defer></script>
-    <script th:src="@{/js/components/footer.js}" defer></script>
     <script th:src="@{/js/util.js}" defer></script>
     
     <!-- Page-specific CSS and Scripts -->
@@ -22,16 +20,16 @@
 <body>
     <div class="container">
         <div class="wrapper">
-            <!-- Dynamic Header -->
-            <div id="header"></div>
+            <!-- Header -->
+            <div th:replace="~{fragments/header :: header}"></div>
             
             <!-- Main Content -->
             <main class="main-content">
                 <th:block th:replace="${content}" />
             </main>
             
-            <!-- Dynamic Footer -->
-            <div id="footer"></div>
+            <!-- Footer -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
         </div>
     </div>
     
@@ -46,13 +44,6 @@
     <!-- Ripple Effect Overlay -->
     <div id="rippleOverlay" class="ripple-overlay"></div>
     
-    <!-- Initialize Header -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            import('./js/components/header.js').then(module => {
-                module.renderHeader();
-            });
-        });
-    </script>
+
 </body>
 </html> 

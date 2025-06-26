@@ -30,10 +30,19 @@ class LoginHandler {
         try {
             // Add your login logic here
             let endpoint;
-            if (type === 'adminLogin') {
-                endpoint = '/api/admin/login';
-            } else {
-                endpoint = `/api/auth/${type}`;
+            switch (type) {
+                case 'adminLogin':
+                    endpoint = '/api/admin/login';
+                    break;
+                case 'doctorLogin':
+                    endpoint = '/api/doctors/login';
+                    break;
+                case 'patientLogin':
+                    endpoint = '/api/patients/login';
+                    break;
+                default:
+                    console.error('Unknown login type:', type);
+                    return; // Stop execution if login type is invalid
             }
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -50,6 +59,7 @@ class LoginHandler {
             const result = await response.json();
             localStorage.setItem('token', result.token);
             localStorage.setItem('userRole', type.replace('Login', ''));
+            localStorage.setItem('userEmail', data.email);
             
             // Redirect based on role
             const role = type.replace('Login', '');

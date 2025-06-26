@@ -16,7 +16,7 @@ import com.project.backend.repositories.PatientRepo;
 import com.project.backend.repositories.AppointmentRepo;
 import com.project.backend.repositories.PrescriptionRepo;
 
-import java.time.LocalDateTime;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -181,17 +181,21 @@ public class PatientService {
     }
 
     private PrescriptionDTO convertToPrescriptionDTO(Prescription prescription) {
+        // Since this service doesn't have access to DoctorRepo, we can't fetch the doctor's name.
+        // For now, we'll leave it as null. A better solution would be a shared DTO conversion service.
+        Patient patient = patientRepo.findById(prescription.getPatientId()).orElse(null);
+
         PrescriptionDTO dto = new PrescriptionDTO();
         dto.setId(prescription.getId());
-        dto.setPatientId(prescription.getPatient().getId());
-        dto.setDoctorId(prescription.getDoctor().getId());
+        dto.setPatientId(prescription.getPatientId());
+        dto.setDoctorId(prescription.getDoctorId());
         dto.setMedication(prescription.getMedication());
         dto.setDosage(prescription.getDosage());
         dto.setDuration(prescription.getDuration());
         dto.setNotes(prescription.getNotes());
         dto.setPrescribedAt(prescription.getPrescribedAt());
-        dto.setPatientName(prescription.getPatient().getName());
-        dto.setDoctorName(prescription.getDoctor().getName());
+        dto.setPatientName(patient != null ? patient.getName() : "N/A");
+        dto.setDoctorName("N/A"); // Doctor name not available here
         return dto;
     }
 }

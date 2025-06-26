@@ -4,12 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
+import java.util.Map;
+import java.util.List;
 
 import com.project.backend.services.AppService;
 import com.project.backend.dtos.DoctorDTO;
 import com.project.backend.models.Doctor;
 import com.project.backend.repositories.DoctorRepo;
 import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin(origins = "*")
@@ -17,13 +20,16 @@ public class AdminController {
 
     @Autowired
     private AppService appService;
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
     
     @Autowired
     private DoctorRepo doctorRepository;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         try {
+            String username = credentials.get("username");
+            String password = credentials.get("password");
+            
             System.out.println("Admin login attempt - Username: " + username); // Debug log
 
             if (username == null || password == null) {
@@ -44,10 +50,10 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<?> dashboard() {
+    public ResponseEntity<?> dashboard(@RequestParam(required = false) String specialty) {
         try {
-            System.out.println("=== Admin dashboard endpoint called ===");
-            Map<String, Object> result = appService.getDoctors();
+            System.out.println("=== Admin dashboard endpoint called with specialty: " + specialty + " ===");
+            Map<String, Object> result = appService.getDoctors(specialty);
             System.out.println("Returning response: " + result);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -55,25 +61,6 @@ public class AdminController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to load dashboard: " + e.getMessage()));
-        }
-    }
-    
-    @GetMapping("/test-doctors")
-    public ResponseEntity<?> testDoctors() {
-        try {
-            System.out.println("=== Test doctors endpoint called ===");
-            List<Doctor> doctors = doctorRepository.findAll();
-            System.out.println("Direct repository call found: " + doctors.size() + " doctors");
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "count", doctors.size(),
-                "doctors", doctors
-            ));
-        } catch (Exception e) {
-            System.err.println("Error in test doctors: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
         }
     }
 

@@ -3,24 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Clinic Management System</title>
-    
+    <title>Doctor Dashboard - Hospital CMS</title>
+
     <!-- CSS -->
-    <link rel="stylesheet" th:href="@{/assets/css/doctorDashboard.css}">
     <link rel="stylesheet" th:href="@{/assets/css/style.css}">
-    
-    <!-- JavaScript -->
-    <script th:src="@{/js/render.js}" defer></script>
-    <script th:src="@{/js/util.js}" defer></script>
-    <script th:src="@{/js/components/header.js}" defer></script>
-    <script th:src="@{/js/components/footer.js}" defer></script>
-    <script th:src="@{/js/components/patientRow.js}" defer></script>
+    <link rel="stylesheet" th:href="@{/assets/css/doctorDashboard.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <div class="wrapper">
-            <!-- Dynamic Header -->
-            <div id="header"></div>
+            <!-- Header Fragment -->
+            <div th:replace="~{fragments/header :: header}"></div>
             
             <main class="main-content">
                 <!-- Search and Filter Section -->
@@ -81,10 +75,14 @@
                 </section>
             </main>
 
-            <!-- Dynamic Footer -->
-            <div id="footer"></div>
+            <!-- Footer Fragment -->
+            <div th:replace="~{fragments/footer :: footer}"></div>
         </div>
     </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="/js/main.js"></script>
+    <script type="module" th:src="@{/js/services/doctorDashboard.js}"></script>
 
     <!-- Add Prescription Modal -->
     <div id="prescriptionModal" class="modal">
@@ -151,6 +149,6 @@
     <script type="module" th:src="@{/js/services/patientServices.js}" defer></script>
     
     <!-- Font Awesome for icons -->
-    <script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
 </body>
 </html>

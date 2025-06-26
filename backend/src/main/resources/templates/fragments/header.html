@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <link rel="stylesheet" th:href="@{/assets/css/style.css}"/>
+</head>
+<body>
+
+<header class="main-header" th:fragment="header">
+    <div class="logo">
+        <a href="/" class="logo-link">
+            <img th:src="@{/assets/images/logo/logo.png}" alt="Logo" class="logo-icon"/>
+            <span class="logo-text">Hospital CMS</span>
+        </a>
+    </div>
+    <nav class="main-nav">
+        <div class="nav-links">            
+            <!-- Auth Links -->
+            <th:block sec:authorize="isAuthenticated()">
+                <a href="#" id="logout-link" class="nav-link">Logout</a>
+            </th:block>            
+        </div>
+    </nav>
+</header>
+
+</body>
+</html>

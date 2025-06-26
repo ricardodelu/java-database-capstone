@@ -56,10 +56,19 @@ public class AppService {
     
 
     public Map<String, Object> getDoctors() {
+        return getDoctors(null);
+    }
+
+    public Map<String, Object> getDoctors(String specialty) {
         Map<String, Object> response = new HashMap<>();
         try {
-            System.out.println("=== AppService.getDoctors() called ===");
-            List<Doctor> doctors = doctorRepository.findAll();
+            System.out.println("=== AppService.getDoctors() called with specialty: " + specialty + " ===");
+            List<Doctor> doctors;
+            if (specialty != null && !specialty.isEmpty() && !"all".equalsIgnoreCase(specialty)) {
+                doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);
+            } else {
+                doctors = doctorRepository.findAll();
+            }
             System.out.println("Found " + doctors.size() + " doctors in database");
             
             // Log first few doctors for debugging
@@ -105,7 +114,12 @@ public class AppService {
         doctor.setName(doctorDTO.getName());
         doctor.setEmail(doctorDTO.getEmail());
         doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
-        doctor.setSpecialization(doctorDTO.getSpecialization());
+        if (doctorDTO.getSpecialty() != null && !doctorDTO.getSpecialty().isEmpty()) {
+            String specialty = doctorDTO.getSpecialty();
+            doctor.setSpecialty(specialty.substring(0, 1).toUpperCase() + specialty.substring(1).toLowerCase());
+        } else {
+            doctor.setSpecialty(doctorDTO.getSpecialty());
+        }
         doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
         return doctorRepository.save(doctor);
     }
@@ -120,7 +134,12 @@ public class AppService {
         doctor.setName(doctorDTO.getName());
         doctor.setEmail(doctorDTO.getEmail());
         doctor.setPhoneNumber(doctorDTO.getPhoneNumber());
-        doctor.setSpecialization(doctorDTO.getSpecialization());
+        if (doctorDTO.getSpecialty() != null && !doctorDTO.getSpecialty().isEmpty()) {
+            String specialty = doctorDTO.getSpecialty();
+            doctor.setSpecialty(specialty.substring(0, 1).toUpperCase() + specialty.substring(1).toLowerCase());
+        } else {
+            doctor.setSpecialty(doctorDTO.getSpecialty());
+        }
         doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
         return doctorRepository.save(doctor);
     }

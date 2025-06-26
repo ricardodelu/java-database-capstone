@@ -2,6 +2,7 @@
 class AdminDashboardService {
     constructor() {
         this.doctors = [];
+        this.editingDoctorId = null; // For tracking edits
         this.searchBar = document.getElementById('searchBar');
         this.specialtyFilter = document.getElementById('specialtyFilter');
         this.timeFilter = document.getElementById('timeFilter');
@@ -9,28 +10,28 @@ class AdminDashboardService {
         this.addDoctorBtn = document.getElementById('addDoctorBtn');
         this.modal = document.getElementById('addDoctorModal');
         this.addDoctorForm = document.getElementById('addDoctorForm');
+        this.modalTitle = this.modal.querySelector('h2');
+        this.submitButton = this.addDoctorForm.querySelector('button[type="submit"]');
         
         this.initializeEventListeners();
         this.loadDoctors();
     }
 
     initializeEventListeners() {
-        // Search functionality
+        // Search and filter
         this.searchBar.addEventListener('input', () => this.filterDoctors());
-        
-        // Filter functionality
-        this.specialtyFilter.addEventListener('change', () => this.filterDoctors());
+        this.specialtyFilter.addEventListener('change', () => this.loadDoctors(this.specialtyFilter.value));
         this.timeFilter.addEventListener('change', () => this.filterDoctors());
         
         // Modal functionality
-        this.addDoctorBtn.addEventListener('click', () => this.openModal());
-        document.querySelector('.close').addEventListener('click', () => this.closeModal());
-        document.querySelector('.cancel-btn').addEventListener('click', () => this.closeModal());
+        this.addDoctorBtn.addEventListener('click', () => this.openModalForAdd());
+        this.modal.querySelector('.close').addEventListener('click', () => this.closeModal());
+        this.modal.querySelector('.cancel-btn').addEventListener('click', () => this.closeModal());
         
         // Form submission
-        this.addDoctorForm.addEventListener('submit', (e) => this.handleAddDoctor(e));
+        this.addDoctorForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
         
-        // Close modal when clicking outside
+        // Close modal on outside click
         window.addEventListener('click', (e) => {
             if (e.target === this.modal) {
                 this.closeModal();
@@ -38,22 +39,28 @@ class AdminDashboardService {
         });
     }
 
-    async loadDoctors() {
+    async loadDoctors(specialty = '') {
         try {
             this.showLoading();
-            const response = await fetch('/api/admin/dashboard', {
+            let url = '/api/admin/dashboard';
+            if (specialty && specialty !== 'all') {
+                url += `?specialty=${encodeURIComponent(specialty)}`;
+            }
+
+            const response = await fetch(url, {
                 headers: {
                     'Accept': 'application/json'
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to fetch doctors');
             }
-            
+
             const data = await response.json();
-            this.doctors = Array.isArray(data) ? data : [];
-            this.renderDoctors();
+            this.doctors = data.doctors || [];
+            this.renderDoctors(); // Initial render after fetch
+            this.filterDoctors(); // Apply other filters like search
         } catch (error) {
             console.error('Error loading doctors:', error);
             this.showError('Failed to load doctors. Please try again later.');
@@ -64,25 +71,24 @@ class AdminDashboardService {
 
     filterDoctors() {
         const searchTerm = this.searchBar.value.toLowerCase();
-        const specialtyFilter = this.specialtyFilter.value;
-        const timeFilter = this.timeFilter.value;
-        
+        const specialty = this.specialtyFilter.value;
+        const time = this.timeFilter.value;
+
+        // The specialty filter is now handled by the backend via loadDoctors.
+        // We only need to trigger a reload if the specialty changes.
+        // The event listener for specialtyFilter should now call loadDoctors directly.
+
         let filteredDoctors = this.doctors.filter(doctor => {
-            const matchesSearch = doctor.name.toLowerCase().includes(searchTerm) ||
-                                doctor.email.toLowerCase().includes(searchTerm);
-            const matchesSpecialty = !specialtyFilter || doctor.specialty === specialtyFilter;
-            return matchesSearch && matchesSpecialty;
+            return doctor.name.toLowerCase().includes(searchTerm);
         });
-        
-        // Apply time sorting if selected
-        if (timeFilter) {
-            filteredDoctors.sort((a, b) => {
-                const dateA = new Date(a.createdAt);
-                const dateB = new Date(b.createdAt);
-                return timeFilter === 'newest' ? dateB - dateA : dateA - dateB;
-            });
+
+        // Sort by ID as a proxy for creation time
+        if (time === 'newest') {
+            filteredDoctors.sort((a, b) => b.id - a.id);
+        } else if (time === 'oldest') {
+            filteredDoctors.sort((a, b) => a.id - b.id);
         }
-        
+
         this.renderDoctors(filteredDoctors);
     }
 
@@ -90,11 +96,7 @@ class AdminDashboardService {
         this.doctorList.innerHTML = '';
         
         if (doctorsToRender.length === 0) {
-            this.doctorList.innerHTML = `
-                <div class="no-doctors">
-                    <p>No doctors found matching your criteria.</p>
-                </div>
-            `;
+            this.doctorList.innerHTML = `<div class="no-doctors"><p>No doctors found matching your criteria.</p></div>`;
             return;
         }
         
@@ -112,64 +114,99 @@ class AdminDashboardService {
                 <h3>${doctor.name}</h3>
                 <p class="specialty">${doctor.specialty}</p>
                 <p class="email">${doctor.email}</p>
-                <p class="phone">${doctor.phone || 'No phone number'}</p>
+                <p class="phone">${doctor.phoneNumber || 'No phone number'}</p>
             </div>
             <div class="doctor-actions">
-                <button class="edit-btn" data-id="${doctor.id}">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="delete-btn" data-id="${doctor.id}">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
+                <button class="edit-btn" data-id="${doctor.id}"><i class="fas fa-edit"></i> Edit</button>
+                <button class="delete-btn" data-id="${doctor.id}"><i class="fas fa-trash"></i> Delete</button>
             </div>
         `;
         
-        // Add event listeners for edit and delete
-        card.querySelector('.edit-btn').addEventListener('click', () => this.handleEditDoctor(doctor));
+        card.querySelector('.edit-btn').addEventListener('click', () => this.openModalForEdit(doctor));
         card.querySelector('.delete-btn').addEventListener('click', () => this.handleDeleteDoctor(doctor.id));
         
         return card;
     }
 
-    async handleAddDoctor(event) {
+    openModalForAdd() {
+        this.editingDoctorId = null;
+        this.modalTitle.textContent = 'Add New Doctor';
+        this.submitButton.textContent = 'Add Doctor';
+        this.addDoctorForm.reset();
+        const passwordField = this.addDoctorForm.elements['password'];
+        passwordField.required = true;
+        passwordField.placeholder = '';
+        this.modal.style.display = 'block';
+    }
+
+    openModalForEdit(doctor) {
+        this.editingDoctorId = doctor.id;
+        this.modalTitle.textContent = 'Edit Doctor';
+        this.submitButton.textContent = 'Update Doctor';
+        this.addDoctorForm.reset();
+
+        // Populate form
+        this.addDoctorForm.elements['name'].value = doctor.name;
+        this.addDoctorForm.elements['email'].value = doctor.email;
+        this.addDoctorForm.elements['specialty'].value = doctor.specialty;
+        this.addDoctorForm.elements['phone'].value = doctor.phoneNumber || '';
+        this.addDoctorForm.elements['licenseNumber'].value = doctor.licenseNumber || '';
+        
+        // Handle password field for edits
+        const passwordField = this.addDoctorForm.elements['password'];
+        passwordField.required = false;
+        passwordField.placeholder = 'Leave blank to keep unchanged';
+
+        this.modal.style.display = 'block';
+    }
+
+    async handleFormSubmit(event) {
         event.preventDefault();
         
         const formData = new FormData(this.addDoctorForm);
+        const isEditing = this.editingDoctorId !== null;
+
+        const password = formData.get('password');
+        const phone = formData.get('phone').replace(/\D/g, ''); // Remove non-digit characters
         const doctorData = {
             name: formData.get('name'),
             email: formData.get('email'),
             specialty: formData.get('specialty'),
-            phone: formData.get('phone'),
-            password: formData.get('password')
+            phoneNumber: phone,
+            licenseNumber: formData.get('licenseNumber')
         };
-        
+
+        // Only include the password if it's a new doctor or if the password is being changed
+        if (!isEditing || (isEditing && password)) {
+            doctorData.password = password;
+        }
+
+        const url = isEditing ? `/api/admin/doctors/${this.editingDoctorId}` : '/api/admin/doctors';
+        const method = isEditing ? 'PUT' : 'POST';
+
         try {
-            const response = await fetch('/api/doctors/register', {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify(doctorData)
             });
-            
+
             if (!response.ok) {
-                throw new Error('Failed to add doctor');
+                const errorText = await response.text();
+                throw new Error(errorText || `Failed to ${isEditing ? 'update' : 'add'} doctor`);
             }
             
-            this.showSuccess('Doctor added successfully!');
+            this.showSuccess(`Doctor ${isEditing ? 'updated' : 'added'} successfully!`);
             this.closeModal();
-            this.addDoctorForm.reset();
             await this.loadDoctors();
-        } catch (error) {
-            console.error('Error adding doctor:', error);
-            this.showError('Failed to add doctor. Please try again.');
-        }
-    }
 
-    async handleEditDoctor(doctor) {
-        // TODO: Implement edit functionality
-        console.log('Edit doctor:', doctor);
+        } catch (error) {
+            console.error(`Error ${isEditing ? 'adding/updating' : 'adding'} doctor:`, error);
+            this.showError(error.message);
+        }
     }
 
     async handleDeleteDoctor(doctorId) {
@@ -178,11 +215,8 @@ class AdminDashboardService {
         }
         
         try {
-            const response = await fetch(`/api/doctors/${doctorId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Accept': 'application/json'
-                }
+            const response = await fetch(`/api/admin/doctors/${doctorId}`, {
+                method: 'DELETE'
             });
             
             if (!response.ok) {
@@ -195,11 +229,6 @@ class AdminDashboardService {
             console.error('Error deleting doctor:', error);
             this.showError('Failed to delete doctor. Please try again.');
         }
-    }
-
-    openModal() {
-        this.modal.style.display = 'block';
-        this.addDoctorForm.reset();
     }
 
     closeModal() {

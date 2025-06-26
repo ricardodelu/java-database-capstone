@@ -22,42 +22,27 @@
     <script type="module" src="/js/util.js"></script>
     <script type="module" src="/js/render.js"></script>
     
-    <!-- Components -->
-    <script type="module" src="/js/components/header.js"></script>
-    <script type="module" src="/js/components/footer.js"></script>
+
 </head>
 <body>
-    <!-- Header Placeholder -->
-    <div id="header"></div>
+<div class="wrapper">
+    <!-- Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="container">
-            <div class="wrapper">
-                <h2 class="role-heading">Select Your Role</h2>
-                <div class="role-buttons">
-                    <button 
-                        id="adminBtn" 
-                        class="role-btn">
-                        Admin
-                    </button>
-                    <button 
-                        id="doctorBtn" 
-                        class="role-btn">
-                        Doctor
-                    </button>
-                    <button 
-                        id="patientBtn" 
-                        class="role-btn">
-                        Patient
-                    </button>
-                </div>
+        <div class="role-selection-container">
+            <h2 class="role-heading">Select Your Role</h2>
+            <div class="role-buttons">
+                <button id="adminBtn" class="role-btn">Admin</button>
+                <button id="doctorBtn" class="role-btn" data-role="doctor">Doctor</button>
+                <button id="patientBtn" class="role-btn">Patient</button>
             </div>
         </div>
     </main>
 
-    <!-- Footer Placeholder -->
-    <div id="footer"></div>
+    <!-- Footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
 
     <!-- Modal -->
     <div id="modal" class="modal">
@@ -69,5 +54,6 @@
 
     <!-- Services -->
     <script type="module" src="/js/services/index.js" defer></script>
+</div>
 </body>
 </html>

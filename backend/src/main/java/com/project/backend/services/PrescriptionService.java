@@ -10,9 +10,7 @@ import com.project.backend.models.Prescription;
 import com.project.backend.repositories.PrescriptionRepo;
 import com.project.backend.repositories.DoctorRepo;
 import com.project.backend.repositories.PatientRepo;
-import com.project.backend.models.Doctor;
-import com.project.backend.models.Patient;
-import java.time.LocalDateTime;
+
 import java.util.Map;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +46,7 @@ public class PrescriptionService {
         }
     }
 
-    public ResponseEntity<?> getPrescription(Long prescriptionId) {
+    public ResponseEntity<?> getPrescription(String prescriptionId) {
         try {
             Optional<Prescription> prescription = prescriptionRepo.findById(prescriptionId);
             if (prescription.isEmpty()) {
