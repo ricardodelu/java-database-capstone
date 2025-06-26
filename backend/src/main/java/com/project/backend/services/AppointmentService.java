@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.Comparator;
 import java.util.ArrayList;
+import com.project.backend.dtos.AppointmentDTO;
 
 @Service
 public class AppointmentService {
@@ -28,6 +29,41 @@ public class AppointmentService {
     
     @Autowired
     private PatientRepo patientRepository;
+
+    public ResponseEntity<?> bookAppointment(Map<String, Object> bookingData, String patientEmail) {
+        try {
+            Long doctorId = Long.parseLong(bookingData.get("doctorId").toString());
+            String date = (String) bookingData.get("date");
+            String time = (String) bookingData.get("time");
+            String reason = (String) bookingData.get("reason");
+
+            Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+
+            Patient patient = patientRepository.findByEmail(patientEmail)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+            LocalDateTime appointmentTime = LocalDateTime.of(LocalDate.parse(date), LocalTime.parse(time));
+
+            Appointment appointment = new Appointment();
+            appointment.setDoctor(doctor);
+            appointment.setPatient(patient);
+            appointment.setAppointmentTime(appointmentTime);
+            appointment.setStatus("BOOKED");
+
+            Appointment saved = appointmentRepository.save(appointment);
+
+            return ResponseEntity.ok(Map.of(
+                "message", "Appointment booked successfully",
+                "appointmentId", saved.getId()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Failed to book appointment: " + e.getMessage()
+            ));
+        }
+    }
 
     public ResponseEntity<?> bookAppointment(Appointment appointment) {
         try {

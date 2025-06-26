@@ -84,7 +84,7 @@ function handleSearch(e) {
     const searchTerm = e.target.value.toLowerCase();
     filteredDoctors = doctors.filter(doctor => 
         doctor.name.toLowerCase().includes(searchTerm) ||
-        doctor.specialization.toLowerCase().includes(searchTerm)
+        doctor.specialty.toLowerCase().includes(searchTerm)
     );
     renderDoctors(filteredDoctors);
 }
@@ -96,7 +96,7 @@ function handleFilter() {
     
     filteredDoctors = doctors.filter(doctor => {
         const matchesTime = !timeFilter || doctor.availableTime === timeFilter;
-        const matchesSpecialty = !specialtyFilter || doctor.specialization === specialtyFilter;
+        const matchesSpecialty = !specialtyFilter || doctor.specialty === specialtyFilter;
         return matchesTime && matchesSpecialty;
     });
     
@@ -130,7 +130,7 @@ function createDoctorCard(doctor) {
     card.innerHTML = `
         <div class="doctor-info">
             <h3 class="doctor-name">${doctor.name}</h3>
-            <p class="doctor-specialty">${doctor.specialization}</p>
+            <p class="doctor-specialty">${doctor.specialty}</p>
             <div class="doctor-details">
                 <p><i class="fas fa-envelope"></i> ${doctor.email}</p>
                 <p><i class="fas fa-phone"></i> ${doctor.phoneNumber}</p>
