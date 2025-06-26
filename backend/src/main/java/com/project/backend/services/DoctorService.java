@@ -139,6 +139,10 @@ public class DoctorService {
         }
     }
 
+    public List<Doctor> getAllDoctors() {
+        return doctorRepo.findAll();
+    }
+
     public ResponseEntity<?> getDoctorAppointments(String email) {
         try {
             Doctor doctor = doctorRepo.findByEmail(email)

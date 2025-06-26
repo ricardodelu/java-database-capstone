@@ -16,8 +16,9 @@ import com.project.backend.repositories.PatientRepo;
 import com.project.backend.repositories.AppointmentRepo;
 import com.project.backend.repositories.PrescriptionRepo;
 
-
 import java.util.*;
+import java.util.ArrayList;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -153,6 +154,10 @@ public class PatientService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch prescriptions: " + e.getMessage()));
         }
+    }
+
+    public Optional<Patient> findPatientByEmail(String email) {
+        return patientRepo.findByEmail(email);
     }
 
     private PatientDTO convertToDTO(Patient patient) {
