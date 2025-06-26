@@ -24,10 +24,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Service
 public class DoctorService {
+
+    private static final Logger logger = LoggerFactory.getLogger(DoctorService.class);
 
 
     
@@ -169,13 +173,22 @@ public class DoctorService {
 
     @Transactional
     public ResponseEntity<?> createPrescription(String email, Map<String, Object> prescriptionData) {
+        logger.info("Attempting to create prescription for doctor: {}", email);
+        logger.debug("Prescription data received: {}", prescriptionData);
+
         try {
             Doctor doctor = doctorRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+                .orElseThrow(() -> new RuntimeException("Doctor not found with email: " + email));
+            logger.info("Found doctor: {}", doctor.getName());
 
-            Long patientId = Long.valueOf(prescriptionData.get("patientId").toString());
+            Object patientIdObj = prescriptionData.get("patientId");
+            if (patientIdObj == null) {
+                throw new RuntimeException("Patient ID is missing from the request.");
+            }
+            Long patientId = Long.valueOf(patientIdObj.toString());
             Patient patient = patientRepo.findById(patientId)
-                .orElseThrow(() -> new RuntimeException("Patient not found"));
+                .orElseThrow(() -> new RuntimeException("Patient not found with ID: " + patientId));
+            logger.info("Found patient: {}", patient.getName());
 
             Prescription prescription = new Prescription();
             prescription.setDoctorId(doctor.getId());
@@ -186,11 +199,15 @@ public class DoctorService {
             prescription.setNotes((String) prescriptionData.get("notes"));
             prescription.setPrescribedAt(LocalDateTime.now());
             prescription.setStatus("ACTIVE");
+            logger.info("Prescription object created: {}", prescription);
 
-            prescriptionRepo.save(prescription);
-            return ResponseEntity.ok(convertToPrescriptionDTO(prescription));
+            Prescription savedPrescription = prescriptionRepo.save(prescription);
+            logger.info("Prescription saved successfully with ID: {}", savedPrescription.getId());
+
+            return ResponseEntity.ok(convertToPrescriptionDTO(savedPrescription));
 
         } catch (Exception e) {
+            logger.error("Error creating prescription for doctor {}: {}", email, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to create prescription: " + e.getMessage()));
         }

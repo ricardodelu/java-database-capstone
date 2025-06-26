@@ -137,16 +137,23 @@ class DoctorDashboardService {
 
     async handlePrescriptionSubmit(event) {
         event.preventDefault();
+        const userEmail = localStorage.getItem('userEmail');
+        if (!userEmail) {
+            this.showError('Could not identify doctor. Please log in again.');
+            return;
+        }
+
         const formData = new FormData(this.prescriptionForm);
         const prescriptionData = {
             patientId: formData.get('patientId'),
             medication: formData.get('medication'),
             dosage: formData.get('dosage'),
-            instructions: formData.get('instructions')
+            duration: formData.get('duration'),
+            notes: formData.get('notes'),
         };
 
         try {
-            const response = await fetch('/api/prescriptions', {
+            const response = await fetch(`/api/doctors/${userEmail}/prescriptions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
