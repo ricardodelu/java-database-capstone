@@ -15,7 +15,8 @@ import java.util.List;
 public interface AppointmentRepo extends JpaRepository<Appointment, Long> {
     // Basic CRUD operations
     List<Appointment> findByPatient_Id(Long patientId);
-    List<Appointment> findByDoctor_Id(Long doctorId);
+    @Query("SELECT a FROM Appointment a JOIN FETCH a.patient p WHERE a.doctor.id = :doctorId")
+    List<Appointment> findByDoctor_Id(@Param("doctorId") Long doctorId);
     List<Appointment> findByStatus(String status);
     
     @Query("SELECT a FROM Appointment a WHERE a.appointmentTime >= :start AND a.appointmentTime < :end")
