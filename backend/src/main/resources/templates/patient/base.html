@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="html(title, styles, scripts, content)">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +9,10 @@
     <!-- Common CSS -->
     <link rel="icon" type="image/x-icon" th:href="@{/assets/images/favicon.ico}">
     <link rel="stylesheet" th:href="@{/assets/css/style.css}" />
-    <link rel="stylesheet" th:href="@{/assets/css/patient.css}" />
+    <link rel="stylesheet" th:href="@{/assets/css/patientDashboard.css}" />
     
     <!-- Common Scripts -->
-    <script th:src="@{/js/util.js}" defer></script>
+    <script type="module" th:src="@{/js/util.js}" defer></script>
     
     <!-- Page-specific CSS and Scripts -->
     <th:block th:replace="${styles}" />

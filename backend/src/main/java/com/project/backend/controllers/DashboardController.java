@@ -46,22 +46,8 @@ public class DashboardController {
     }
 
     @GetMapping("/patient/dashboard")
-    public String patientDashboard(Model model, Principal principal) {
-        List<Doctor> doctors = doctorService.getAllDoctors();
-        List<String> specialties = doctors.stream()
-                                          .map(Doctor::getSpecialty)
-                                          .distinct()
-                                          .sorted()
-                                          .collect(Collectors.toList());
-
-        // The patient object is needed for the booking form to get the patientId.
-        // We get the email of the logged-in user from the Principal object.
-        Patient patient = patientService.findPatientByEmail(principal.getName())
-            .orElseThrow(() -> new RuntimeException("Patient not found for email: " + principal.getName()));
-
-        model.addAttribute("doctors", doctors);
-        model.addAttribute("specialties", specialties);
-        model.addAttribute("patient", patient);
+    public String patientDashboard() {
+        // The frontend will be responsible for fetching data via API calls.
         return "patient/patientDashboard";
     }
 

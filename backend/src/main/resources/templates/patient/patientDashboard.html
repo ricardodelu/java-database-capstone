@@ -39,32 +39,19 @@
             </select>
             <select class="filter-select" id="filterSpecialty">
                 <option value="">All Specialties</option>
-                <option th:each="specialty : ${specialties}"
-                        th:value="${specialty}"
-                        th:text="${specialty}">Specialty</option>
+                <!-- Specialties will be populated by JS -->
             </select>
         </div>
 
         <!-- Doctor Cards Container -->
         <div id="content" class="doctor-cards-container">
-            <!-- Doctor cards will be populated dynamically -->
-            <div th:if="${doctors.empty}" class="no-results">
-                <p>No doctors found matching your criteria.</p>
-            </div>
-            <div th:each="doctor : ${doctors}" class="doctor-card" th:data-doctor-id="${doctor.id}">
-                <h3 th:text="${doctor.name}">Doctor Name</h3>
-                <p class="specialty" th:text="${doctor.specialty}">Specialty</p>
-                <p class="location" th:text="${doctor.location}">Location</p>
-                <button class="btn-book" th:onclick="'openBookingModal(' + ${doctor.id} + ')'">
-                    Book Appointment
-                </button>
-            </div>
+            <!-- Doctor cards will be populated dynamically by patientDashboard.js -->
         </div>
 
         <!-- Booking Form -->
         <form id="bookingForm" class="booking-form" th:action="@{/api/appointments}" method="POST" style="display: none;">
             <input type="hidden" name="doctorId" id="doctorId" />
-            <input type="hidden" name="patientId" th:value="${patient.id}" />
+            <input type="hidden" name="patientId" id="patientId" />
             <div class="form-group">
                 <label for="appointmentDate">Date</label>
                 <input type="date" id="appointmentDate" name="date" required

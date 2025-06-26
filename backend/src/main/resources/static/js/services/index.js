@@ -60,6 +60,10 @@ class LoginHandler {
             localStorage.setItem('token', result.token);
             localStorage.setItem('userRole', type.replace('Login', ''));
             localStorage.setItem('userEmail', data.email);
+
+            if (role === 'patient' && result.patient) {
+                localStorage.setItem('patientId', result.patient.id);
+            }
             
             // Redirect based on role
             const role = type.replace('Login', '');

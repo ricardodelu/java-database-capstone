@@ -143,6 +143,12 @@ public class DoctorService {
         return doctorRepo.findAll();
     }
 
+    public List<DoctorDTO> getAllDoctorsAsDTOs() {
+        return doctorRepo.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     public ResponseEntity<?> getDoctorAppointments(String email) {
         try {
             Doctor doctor = doctorRepo.findByEmail(email)

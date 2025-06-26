@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -16,6 +17,17 @@ public class DoctorController {
 
     @Autowired
     private DoctorService doctorService;
+
+    @GetMapping
+    public ResponseEntity<?> getAllDoctors() {
+        try {
+            List<DoctorDTO> doctors = doctorService.getAllDoctorsAsDTOs();
+            return ResponseEntity.ok(Map.of("doctors", doctors));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch doctors: " + e.getMessage()));
+        }
+    }
 
     @PostMapping("/register")
     public ResponseEntity<?> registerDoctor(@Valid @RequestBody DoctorDTO doctorDTO) {

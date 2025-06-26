@@ -49,7 +49,7 @@ async function loadDoctors() {
         }
         
         const data = await response.json();
-        doctors = data;
+        doctors = data.doctors;
         filteredDoctors = [...doctors];
     } catch (error) {
         console.error('Error loading doctors:', error);
@@ -171,27 +171,28 @@ async function loadAvailableTimeSlots() {
     if (!selectedDoctor || !appointmentDate.value) return;
     
     try {
-        const response = await fetch(`/api/doctors/${selectedDoctor.id}/availability`, {
-            method: 'POST',
+        const date = appointmentDate.value;
+        const response = await fetch(`/api/doctors/${selectedDoctor.id}/availability?date=${date}`, {
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ date: appointmentDate.value })
+            }
         });
         
         if (!response.ok) throw new Error('Failed to fetch available time slots');
         
-        const timeSlots = await response.json();
+        const data = await response.json();
+        const timeSlots = data.availableSlots;
         
         // Populate time slots dropdown
         appointmentTime.innerHTML = '<option value="">Select a time slot</option>';
-        timeSlots.forEach(slot => {
-            const option = document.createElement('option');
-            option.value = slot;
-            option.textContent = slot;
-            appointmentTime.appendChild(option);
-        });
+        if (timeSlots && timeSlots.length > 0) {
+            timeSlots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot;
+                option.textContent = slot;
+                appointmentTime.appendChild(option);
+            });
+        }
     } catch (error) {
         console.error('Error loading time slots:', error);
         showError('Failed to load available time slots. Please try again.');
@@ -208,6 +209,7 @@ async function handleBookingSubmit(e) {
     }
     
     const bookingData = {
+        patientId: localStorage.getItem('patientId'),
         doctorId: selectedDoctor.id,
         date: appointmentDate.value,
         time: appointmentTime.value,
