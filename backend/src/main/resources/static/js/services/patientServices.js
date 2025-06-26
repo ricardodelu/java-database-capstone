@@ -1,7 +1,7 @@
-import { API_BASE_URL } from '../config/config.js';
+import config from '../config/config.js';
 
-const PATIENT_API = `${API_BASE_URL}/api/patients`;
-const AUTH_API = `${API_BASE_URL}/api/auth`;
+const PATIENT_API = `${config.API_BASE_URL}/api/patients`;
+const AUTH_API = `${config.API_BASE_URL}/api/auth`;
 
 class PatientService {
     async signup(patientData) {

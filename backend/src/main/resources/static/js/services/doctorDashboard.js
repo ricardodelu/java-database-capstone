@@ -16,53 +16,58 @@ class DoctorDashboardService {
 
         // Modal Elements
         this.modal = document.getElementById('prescriptionModal');
-        this.closeModalBtn = this.modal.querySelector('.close');
-        this.prescriptionForm = document.getElementById('prescriptionForm');
-        this.patientIdInput = document.getElementById('patientId');
+        if (this.modal) {
+            this.closeModalBtn = this.modal.querySelector('.close');
+            this.prescriptionForm = document.getElementById('prescriptionForm');
+            this.patientIdInput = document.getElementById('patientId');
+        }
 
         this.addEventListeners();
         this.loadAppointments();
     }
 
     addEventListeners() {
-        this.searchBar.addEventListener('input', () => this.filterAndRender());
-        this.dateFilter.addEventListener('change', () => this.filterAndRender());
-        this.statusFilter.addEventListener('change', () => this.filterAndRender());
-        this.todayBtn.addEventListener('click', () => this.showTodaysAppointments());
-        this.refreshBtn.addEventListener('click', () => this.loadAppointments());
-        this.closeModalBtn.addEventListener('click', () => this.closeModal());
-        this.prescriptionForm.addEventListener('submit', (e) => this.handlePrescriptionSubmit(e));
+        if (this.searchBar) this.searchBar.addEventListener('input', () => this.filterAndRender());
+        if (this.dateFilter) this.dateFilter.addEventListener('change', () => this.filterAndRender());
+        if (this.statusFilter) this.statusFilter.addEventListener('change', () => this.filterAndRender());
+        if (this.todayBtn) this.todayBtn.addEventListener('click', () => this.showTodaysAppointments());
+        if (this.refreshBtn) this.refreshBtn.addEventListener('click', () => this.loadAppointments());
+        if (this.closeModalBtn) this.closeModalBtn.addEventListener('click', () => this.closeModal());
+        if (this.prescriptionForm) this.prescriptionForm.addEventListener('submit', (e) => this.handlePrescriptionSubmit(e));
     }
 
     async loadAppointments() {
         try {
             const userEmail = localStorage.getItem('userEmail');
             if (!userEmail) {
-                console.error('User email not found in localStorage. Cannot fetch appointments.');
+                console.error('User email not found in localStorage.');
                 this.showAlert('Could not verify user. Please log in again.', 'error');
                 return;
             }
             const response = await fetch(`/api/doctors/${userEmail}/appointments`);
             if (!response.ok) {
-                throw new Error('Failed to fetch appointments.');
+                const errorText = await response.text();
+                throw new Error(`Failed to fetch appointments: ${response.status} ${errorText}`);
             }
             this.appointments = await response.json();
             this.filterAndRender();
         } catch (error) {
             console.error('Error loading appointments:', error);
-            this.showError('Could not load appointments.');
+            if (this.noPatientsDiv) this.noPatientsDiv.style.display = 'block';
+            if (this.tableBody) this.tableBody.innerHTML = '<tr><td colspan="7">Could not load appointments.</td></tr>';
         }
     }
 
     filterAndRender() {
-        const searchTerm = this.searchBar.value.toLowerCase();
-        const selectedDate = this.dateFilter.value;
-        const selectedStatus = this.statusFilter.value;
+        if (!this.appointments) return;
+        const searchTerm = this.searchBar ? this.searchBar.value.toLowerCase() : '';
+        const selectedDate = this.dateFilter ? this.dateFilter.value : '';
+        const selectedStatus = this.statusFilter ? this.statusFilter.value : '';
 
         let filtered = this.appointments.filter(appt => {
             const patientName = appt.patient?.name?.toLowerCase() || '';
             const patientId = appt.patient?.id?.toString() || '';
-            const appointmentDate = appt.appointmentTime.split('T')[0];
+            const appointmentDate = appt.appointmentTime ? appt.appointmentTime.split('T')[0] : '';
 
             const matchesSearch = patientName.includes(searchTerm) || patientId.includes(searchTerm);
             const matchesDate = !selectedDate || appointmentDate === selectedDate;
@@ -75,6 +80,8 @@ class DoctorDashboardService {
     }
 
     renderAppointments(appointmentsToRender) {
+        if (!this.tableBody || !this.noPatientsDiv) return;
+
         this.tableBody.innerHTML = '';
         if (appointmentsToRender.length === 0) {
             this.noPatientsDiv.style.display = 'block';
@@ -84,21 +91,22 @@ class DoctorDashboardService {
 
         appointmentsToRender.forEach(appt => {
             const row = document.createElement('tr');
+            const appointmentDateTime = appt.appointmentTime ? new Date(appt.appointmentTime).toLocaleString() : 'N/A';
+            const status = appt.status ? appt.status.toLowerCase() : 'unknown';
             row.innerHTML = `
-                <td>${appt.patient.id}</td>
-                <td>${appt.patient.name}</td>
-                <td>${appt.patient.phoneNumber || 'N/A'}</td>
-                <td>${appt.patient.email}</td>
-                <td>${new Date(appt.appointmentTime).toLocaleString()}</td>
-                <td><span class="status status-${appt.status.toLowerCase()}">${appt.status}</span></td>
+                <td>${appt.patient?.id || 'N/A'}</td>
+                <td>${appt.patient?.name || 'N/A'}</td>
+                <td>${appt.patient?.phoneNumber || 'N/A'}</td>
+                <td>${appt.patient?.email || 'N/A'}</td>
+                <td>${appointmentDateTime}</td>
+                <td><span class="status status-${status}">${appt.status || 'N/A'}</span></td>
                 <td>
-                    <button class="action-btn add-prescription-btn" data-patient-id="${appt.patient.id}">Prescribe</button>
+                    <button class="action-btn add-prescription-btn" data-patient-id="${appt.patient?.id}">Prescribe</button>
                 </td>
             `;
             this.tableBody.appendChild(row);
         });
 
-        // Add event listeners to new buttons
         this.tableBody.querySelectorAll('.add-prescription-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const patientId = e.target.dataset.patientId;
@@ -108,17 +116,20 @@ class DoctorDashboardService {
     }
 
     showTodaysAppointments() {
+        if (!this.dateFilter) return;
         const today = new Date().toISOString().split('T')[0];
         this.dateFilter.value = today;
         this.filterAndRender();
     }
 
     openModal(patientId) {
+        if (!this.modal || !this.patientIdInput) return;
         this.patientIdInput.value = patientId;
         this.modal.style.display = 'block';
     }
 
     closeModal() {
+        if (!this.modal || !this.prescriptionForm) return;
         this.modal.style.display = 'none';
         this.prescriptionForm.reset();
     }
@@ -143,7 +154,8 @@ class DoctorDashboardService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to add prescription.');
+                const errorText = await response.text();
+                throw new Error(`Failed to add prescription: ${errorText}`);
             }
 
             this.showSuccess('Prescription added successfully!');
@@ -155,7 +167,6 @@ class DoctorDashboardService {
     }
 
     showAlert(message, type = 'info') {
-        // A simple alert, can be replaced with a more sophisticated notification system
         alert(`${type.toUpperCase()}: ${message}`);
     }
 
@@ -169,108 +180,7 @@ class DoctorDashboardService {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new DoctorDashboardService();
+    if (document.getElementById('patientTableBody')) {
+        new DoctorDashboardService();
+    }
 });
-    }
-}
-
-// Add prescription
-function addPrescription(patientId) {
-    document.getElementById('patientId').value = patientId;
-    prescriptionForm.reset();
-    prescriptionModal.style.display = 'block';
-}
-
-// Handle prescription form submission
-async function handlePrescriptionSubmit(e) {
-    e.preventDefault();
-    
-    try {
-        const token = getAuthToken();
-        const formData = new FormData(e.target);
-        const prescriptionData = {
-            patientId: formData.get('patientId'),
-            medication: formData.get('medication'),
-            dosage: formData.get('dosage'),
-            frequency: formData.get('frequency'),
-            duration: formData.get('duration'),
-            notes: formData.get('notes'),
-        };
-
-        const response = await fetch(ENDPOINTS.PRESCRIPTIONS, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(prescriptionData),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Close modal and show success message
-        prescriptionModal.style.display = 'none';
-        showSuccess('Prescription added successfully');
-        
-        // Refresh patient list
-        loadPatients();
-    } catch (error) {
-        console.error('Failed to add prescription:', error);
-        showError('Failed to add prescription. Please try again.');
-    }
-}
-
-// Utility functions
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function formatDateTime(dateTimeStr) {
-    const date = new Date(dateTimeStr);
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
-
-function showError(message) {
-    // Implement your preferred error notification system
-    alert(message); // Replace with a better UI notification
-}
-
-function showSuccess(message) {
-    // Implement your preferred success notification system
-    alert(message); // Replace with a better UI notification
-}
-
-// Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeDashboard);
-
-// Export functions for use in other modules
-export {
-    loadPatients,
-    viewPatientDetails,
-    addPrescription,
-}; 
