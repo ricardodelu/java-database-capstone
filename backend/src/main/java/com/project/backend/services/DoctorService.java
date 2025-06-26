@@ -12,6 +12,7 @@ import com.project.backend.models.Appointment;
 import com.project.backend.models.Prescription;
 import com.project.backend.dtos.DoctorDTO;
 import com.project.backend.dtos.AppointmentDTO;
+
 import com.project.backend.dtos.PrescriptionDTO;
 import com.project.backend.repositories.DoctorRepo;
 import com.project.backend.repositories.PatientRepo;
@@ -24,8 +25,11 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Service
 public class DoctorService {
+
+
     
     @Autowired
     private DoctorRepo doctorRepo;
@@ -137,11 +141,7 @@ public class DoctorService {
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
             List<Appointment> appointments = appointmentRepo.findByDoctor_Id(doctor.getId());
-            List<AppointmentDTO> appointmentDTOs = appointments.stream()
-                .map(this::convertToAppointmentDTO)
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok(Map.of("appointments", appointmentDTOs));
+            return ResponseEntity.ok(Map.of("appointments", appointments));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -329,6 +329,23 @@ public class DoctorService {
             .contains(status.toUpperCase());
     }
 
+    private AppointmentDTO convertToAppointmentDTO(Appointment appointment) {
+        Patient patient = appointment.getPatient();
+        Doctor doctor = appointment.getDoctor();
+        return new AppointmentDTO(
+            appointment.getId(),
+            doctor != null ? doctor.getId() : null,
+            doctor != null ? doctor.getName() : "N/A",
+            patient != null ? patient.getId() : null,
+            patient != null ? patient.getName() : "N/A",
+            patient != null ? patient.getEmail() : "N/A",
+            patient != null ? patient.getPhoneNumber() : "N/A",
+            patient != null ? patient.getAddress() : "N/A",
+            appointment.getAppointmentTime(),
+            appointment.getStatus()
+        );
+    }
+
     private DoctorDTO convertToDTO(Doctor doctor) {
         DoctorDTO dto = new DoctorDTO();
         dto.setId(doctor.getId());
@@ -340,20 +357,7 @@ public class DoctorService {
         return dto;
     }
 
-    private AppointmentDTO convertToAppointmentDTO(Appointment appointment) {
-        return new AppointmentDTO(
-            appointment.getId(),
-            appointment.getDoctorId(),
-            appointment.getDoctor().getName(),
-            appointment.getPatientId(),
-            appointment.getPatient().getName(),
-            appointment.getPatient().getEmail(),
-            appointment.getPatient().getPhoneNumber(),
-            appointment.getPatient().getAddress(),
-            appointment.getAppointmentTime(),
-            appointment.getStatus()
-        );
-    }
+
 
     private PrescriptionDTO convertToPrescriptionDTO(Prescription prescription) {
         Patient patient = patientRepo.findById(prescription.getPatientId()).orElse(null);
