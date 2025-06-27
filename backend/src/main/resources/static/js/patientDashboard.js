@@ -18,8 +18,7 @@ async function initializeDashboard() {
         // Load doctors data
         await loadDoctors();
         
-        // Set up event listeners
-        setupEventListeners();
+
         
         // Initial render
         renderDoctors(doctors);
@@ -124,21 +123,53 @@ function createDoctorCard(doctor) {
 }
 
 // Show booking modal
-function showBookingModal() {
-    showModal('bookAppointment', { doctorName: selectedDoctor.name });
+function getBookingFormHTML(doctor) {
+    return `
+        <h2>Book Appointment</h2>
+        <form id="bookingForm">
+            <p>Booking with: <strong>${doctor.name}</strong></p>
+            <label for="appointmentDate">Date:</label>
+            <input type="date" id="appointmentDate" name="date" required>
+            <label for="appointmentTime">Time:</label>
+            <select id="appointmentTime" name="time" required></select>
+            <label for="reason">Reason for visit:</label>
+            <textarea id="reason" name="reason" rows="3"></textarea>
+            <button type="submit">Book Appointment</button>
+        </form>
+    `;
+}
 
-    // Now that the modal is shown, get elements and add listeners
+function showBookingModal() {
+    const modalBody = document.getElementById('modal-body');
+    if (!modalBody) {
+        console.error('Modal body not found!');
+        return;
+    }
+
+    modalBody.innerHTML = getBookingFormHTML(selectedDoctor);
+    showModal();
+
+    // Add event listeners for the new modal content
     const bookingForm = document.getElementById('bookingForm');
     const appointmentDate = document.getElementById('appointmentDate');
+    const closeModal = document.getElementById('closeModal');
+    const modal = document.getElementById('modal');
 
     if (bookingForm) {
         bookingForm.addEventListener('submit', handleBookingSubmit);
     }
-
     if (appointmentDate) {
         const today = new Date().toISOString().split('T')[0];
         appointmentDate.min = today;
         appointmentDate.addEventListener('change', loadAvailableTimeSlots);
+    }
+    if(closeModal) {
+        closeModal.addEventListener('click', () => hideModal());
+    }
+    if(modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideModal();
+        });
     }
 }
 

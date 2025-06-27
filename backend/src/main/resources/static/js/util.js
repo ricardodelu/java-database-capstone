@@ -1,11 +1,13 @@
 // Modal Management
-export function showModal(modal) {
+export function showModal() {
+    const modal = document.getElementById('modal');
     if (!modal) return;
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
-export function hideModal(modal) {
+export function hideModal() {
+    const modal = document.getElementById('modal');
     if (!modal) return;
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
