@@ -1,78 +1,59 @@
 # Database Schema Design
 
-## MySQL Database Design
+This document outlines the database schema for the Clinic Management System, based on the Java persistence models.
 
-### Table: `patients`
-| Column Name     | Data Type      | Constraints                | Description                  |
-|-----------------|---------------|----------------------------|------------------------------|
-| patient_id      | INT           | PRIMARY KEY, AUTO_INCREMENT| Unique patient identifier    |
-| email           | VARCHAR(100)  | NOT NULL, UNIQUE           | Patient email address        |
-| password_hash   | VARCHAR(255)  | NOT NULL                   | Hashed password              |
-| name            | VARCHAR(100)  | NOT NULL                   | Full name                    |
-| phone           | VARCHAR(20)   |                            | Contact number               |
-| created_at      | DATETIME      | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Registration date     |
+## MySQL Database Schema
 
-### Table: `doctors`
-| Column Name     | Data Type      | Constraints                | Description                  |
-|-----------------|---------------|----------------------------|------------------------------|
-| doctor_id       | INT           | PRIMARY KEY, AUTO_INCREMENT| Unique doctor identifier     |
-| email           | VARCHAR(100)  | NOT NULL, UNIQUE           | Doctor email address         |
-| password_hash   | VARCHAR(255)  | NOT NULL                   | Hashed password              |
-| name            | VARCHAR(100)  | NOT NULL                   | Full name                    |
-| specialization  | VARCHAR(100)  | NOT NULL                   | Medical specialty            |
-| phone           | VARCHAR(20)   |                            | Contact number               |
-| available       | BOOLEAN        | NOT NULL, DEFAULT 1        | Availability status          |
+### Table: `patient`
+Represents a patient in the system.
 
-### Table: `appointments`
-| Column Name     | Data Type      | Constraints                | Description                  |
-|-----------------|---------------|----------------------------|------------------------------|
-| appointment_id  | INT           | PRIMARY KEY, AUTO_INCREMENT| Unique appointment identifier|
-| patient_id      | INT           | NOT NULL, FOREIGN KEY (patient_id) REFERENCES patients(patient_id) | Patient reference |
-| doctor_id       | INT           | NOT NULL, FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id)   | Doctor reference  |
-| appointment_time| DATETIME      | NOT NULL                   | Scheduled time               |
-| duration_min    | INT           | NOT NULL, DEFAULT 60       | Duration in minutes          |
-| status          | VARCHAR(20)   | NOT NULL, DEFAULT 'scheduled' | Appointment status        |
+| Column Name  | Data Type    | Constraints                             | Description                                    |
+|--------------|--------------|-----------------------------------------|------------------------------------------------|
+| `id`           | BIGINT       | PRIMARY KEY, AUTO_INCREMENT             | Unique identifier for the patient.             |
+| `name`         | VARCHAR(100) | NOT NULL                                | Patient's full name.                           |
+| `email`        | VARCHAR(255) | NOT NULL, UNIQUE                        | Patient's email address.                       |
+| `password`     | VARCHAR(255) | NOT NULL                                | Patient's hashed password.                     |
+| `phone_number` | VARCHAR(255) | NOT NULL                                | Patient's phone number (e.g., `XXX-XXX-XXXX`). |
+| `address`      | VARCHAR(255) | NOT NULL                                | Patient's physical address.                    |
+
+### Table: `doctor`
+Represents a doctor in the system.
+
+| Column Name     | Data Type    | Constraints                             | Description                                  |
+|-----------------|--------------|-----------------------------------------|----------------------------------------------|
+| `id`              | BIGINT       | PRIMARY KEY, AUTO_INCREMENT             | Unique identifier for the doctor.            |
+| `name`            | VARCHAR(100) | NOT NULL                                | Doctor's full name.                          |
+| `specialty`       | VARCHAR(100) | NOT NULL                                | Doctor's medical specialty.                  |
+| `email`           | VARCHAR(255) | NOT NULL, UNIQUE                        | Doctor's email address.                      |
+| `password`        | VARCHAR(255) | NOT NULL                                | Doctor's hashed password.                    |
+| `phone_number`    | VARCHAR(10)  | NOT NULL                                | Doctor's 10-digit phone number.              |
+| `license_number`  | VARCHAR(20)  |                                         | Doctor's medical license number.             |
+
+### Table: `doctor_available_times`
+This is a collection table linked to the `doctor` table, storing their available time slots.
+
+| Column Name       | Data Type    | Constraints      | Description                               |
+|-------------------|--------------|------------------|-------------------------------------------|
+| `doctor_id`         | BIGINT       | NOT NULL, FK     | Foreign key referencing the `doctor` table. |
+| `available_times`   | VARCHAR(255) |                  | An available time slot (e.g., `09:00 AM`).  |
+
+### Table: `appointment`
+Represents an appointment scheduled between a doctor and a patient.
+
+| Column Name       | Data Type | Constraints                               | Description                                      |
+|-------------------|-----------|-------------------------------------------|--------------------------------------------------|
+| `id`                | BIGINT    | PRIMARY KEY, AUTO_INCREMENT               | Unique identifier for the appointment.           |
+| `doctor_id`         | BIGINT    | NOT NULL, FK to `doctor(id)`              | The doctor for the appointment.                  |
+| `patient_id`        | BIGINT    | NOT NULL, FK to `patient(id)`             | The patient for the appointment.                 |
+| `appointment_time`  | DATETIME  | NOT NULL, Must be in the future           | The scheduled date and time of the appointment.  |
+| `status`            | VARCHAR(255)|                                           | The status of the appointment (e.g., `SCHEDULED`).|
 
 ### Table: `admin`
+Represents an administrator in the system. Note: This table exists in `data.sql` but does not have a corresponding Java model in the core application.
+
 | Column Name     | Data Type      | Constraints                | Description                  |
 |-----------------|---------------|----------------------------|------------------------------|
-| admin_id        | INT           | PRIMARY KEY, AUTO_INCREMENT| Unique admin identifier      |
-| username        | VARCHAR(50)   | NOT NULL, UNIQUE           | Admin username               |
-| password_hash   | VARCHAR(255)  | NOT NULL                   | Hashed password              |
-| email           | VARCHAR(100)  | NOT NULL, UNIQUE           | Admin email address          |
-| created_at      | DATETIME      | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Account creation date |
-
----
-
-## MongoDB Collection Design
-
-### Collection: `prescriptions`
-
-#### Example Document
-
-```json
-{
-  "_id": "665a1b2c3d4e5f6789012345",
-  "patient_id": 101,
-  "doctor_id": 12,
-  "date_issued": "2025-05-30T10:30:00Z",
-  "medications": [
-    {
-      "name": "Amoxicillin",
-      "dosage": "500mg",
-      "frequency": "3 times a day",
-      "duration_days": 7
-    },
-    {
-      "name": "Ibuprofen",
-      "dosage": "200mg",
-      "frequency": "as needed",
-      "duration_days": 5
-    }
-  ],
-  "notes": "Take medications with food. Return for follow-up in one week.",
-  "pharmacy": {
-    "name": "HealthPlus Pharmacy",
-    "address": "123 Main St, Cityville"
-  }
-}
+| `id`            | INT           | PRIMARY KEY, AUTO_INCREMENT| Unique admin identifier      |
+| `username`      | VARCHAR(50)   | NOT NULL, UNIQUE           | Admin username               |
+| `password`      | VARCHAR(255)  | NOT NULL                   | Hashed password              |
+| `email`         | VARCHAR(100)  | NOT NULL, UNIQUE           | Admin email address          |
