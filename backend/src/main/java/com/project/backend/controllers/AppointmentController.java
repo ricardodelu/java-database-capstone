@@ -17,11 +17,10 @@ public class AppointmentController {
     @Autowired
     private AppointmentService appointmentService;
 
-    @PostMapping
-    public ResponseEntity<?> createAppointment(@RequestBody Map<String, Object> bookingData, Principal principal) {
+    @PostMapping("/book")
+    public ResponseEntity<?> createAppointment(@RequestBody Map<String, Object> bookingData) {
         try {
-            String patientEmail = principal.getName();
-            return appointmentService.bookAppointment(bookingData, patientEmail);
+            return appointmentService.bookAppointment(bookingData);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to create appointment: " + e.getMessage()));

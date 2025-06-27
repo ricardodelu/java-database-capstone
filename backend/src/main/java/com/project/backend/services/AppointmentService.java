@@ -30,9 +30,10 @@ public class AppointmentService {
     @Autowired
     private PatientRepo patientRepository;
 
-    public ResponseEntity<?> bookAppointment(Map<String, Object> bookingData, String patientEmail) {
+    public ResponseEntity<?> bookAppointment(Map<String, Object> bookingData) {
         try {
             Long doctorId = Long.parseLong(bookingData.get("doctorId").toString());
+            Long patientId = Long.parseLong(bookingData.get("patientId").toString());
             String date = (String) bookingData.get("date");
             String time = (String) bookingData.get("time");
             String reason = (String) bookingData.get("reason");
@@ -40,7 +41,7 @@ public class AppointmentService {
             Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
-            Patient patient = patientRepository.findByEmail(patientEmail)
+            Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
             LocalDateTime appointmentTime = LocalDateTime.of(LocalDate.parse(date), LocalTime.parse(time));

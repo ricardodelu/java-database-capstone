@@ -57,16 +57,16 @@ class LoginHandler {
             }
 
             const result = await response.json();
-            localStorage.setItem('token', result.token);
-            localStorage.setItem('userRole', type.replace('Login', ''));
+            const role = type.replace('Login', '');
+            localStorage.setItem('userRole', role);
             localStorage.setItem('userEmail', data.email);
 
             if (role === 'patient' && result.patient) {
+                console.log('Storing patient ID:', result.patient.id); // Debug log
                 localStorage.setItem('patientId', result.patient.id);
             }
             
             // Redirect based on role
-            const role = type.replace('Login', '');
             const redirectUrl = `${window.location.origin}/${role}/dashboard`;
             console.log('Redirecting to:', redirectUrl); // Debug log
             window.location.replace(redirectUrl);

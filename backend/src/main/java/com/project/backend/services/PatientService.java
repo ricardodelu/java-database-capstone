@@ -17,12 +17,16 @@ import com.project.backend.repositories.AppointmentRepo;
 import com.project.backend.repositories.PrescriptionRepo;
 
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class PatientService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PatientService.class);
     
     @Autowired
     private PatientRepo patientRepo;
@@ -75,9 +79,13 @@ public class PatientService {
                     .body(Map.of("error", "Invalid credentials"));
             }
 
-            return ResponseEntity.ok(Map.of(
-                "patient", convertToDTO(patient)
-            ));
+            PatientDTO patientDTO = convertToDTO(patient);
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("patient", patientDTO);
+
+            logger.info("Patient login successful for: {}. Sending response: {}", email, responseBody);
+
+            return ResponseEntity.ok(responseBody);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

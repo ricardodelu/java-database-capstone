@@ -38,11 +38,7 @@ async function initializeDashboard() {
 // Load doctors from the API
 async function loadDoctors() {
     try {
-        const response = await fetch('/api/doctors', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await fetch('/api/doctors');
         
         if (!response.ok) {
             throw new Error('Failed to fetch doctors');
@@ -172,11 +168,7 @@ async function loadAvailableTimeSlots() {
     
     try {
         const date = appointmentDate.value;
-        const response = await fetch(`/api/doctors/${selectedDoctor.id}/availability?date=${date}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await fetch(`/api/doctors/${selectedDoctor.id}/availability?date=${date}`);
         
         if (!response.ok) throw new Error('Failed to fetch available time slots');
         
@@ -208,8 +200,11 @@ async function handleBookingSubmit(e) {
         return;
     }
     
+    const patientId = localStorage.getItem('patientId');
+    console.log('Retrieved patient ID for booking:', patientId); // Debug log
+
     const bookingData = {
-        patientId: localStorage.getItem('patientId'),
+        patientId: patientId,
         doctorId: selectedDoctor.id,
         date: appointmentDate.value,
         time: appointmentTime.value,
@@ -217,11 +212,10 @@ async function handleBookingSubmit(e) {
     };
     
     try {
-        const response = await fetch('/api/appointments', {
+        const response = await fetch('/api/appointments/book', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(bookingData)
         });

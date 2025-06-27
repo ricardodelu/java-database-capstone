@@ -65,9 +65,11 @@ export class Modal {
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('Form submitted in modal. Type:', type); // Debug log
                 const formData = new FormData(form);
                 const data = Object.fromEntries(formData.entries());
                 
+                console.log('Dispatching modalSubmit event with data:', data); // Debug log
                 // Dispatch custom event for form submission
                 const event = new CustomEvent('modalSubmit', {
                     detail: { type, data }
