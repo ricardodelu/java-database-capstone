@@ -381,6 +381,7 @@ public class DoctorService {
         dto.setPhoneNumber(doctor.getPhoneNumber());
         dto.setSpecialty(doctor.getSpecialty());
         dto.setLicenseNumber(doctor.getLicenseNumber());
+        dto.setAvailableTimes(doctor.getAvailableTimes());
         return dto;
     }
 

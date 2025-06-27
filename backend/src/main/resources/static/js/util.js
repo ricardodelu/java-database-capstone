@@ -1,14 +1,20 @@
 // Modal Management
-export function showModal() {
-    const modal = document.getElementById('modal');
-    if (!modal) return;
+export function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal with ID '${modalId}' not found.`);
+        return;
+    }
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
-export function hideModal() {
-    const modal = document.getElementById('modal');
-    if (!modal) return;
+export function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`Modal with ID '${modalId}' not found.`);
+        return;
+    }
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
 }

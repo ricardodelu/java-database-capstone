@@ -30,3 +30,11 @@ INSERT INTO appointment (doctor_id, patient_id, appointment_time, status) VALUES
 (1, 3, '2025-07-11 14:00:00', 'SCHEDULED'),
 (2, 4, '2025-07-12 11:00:00', 'SCHEDULED'),
 (2, 5, '2025-07-12 15:30:00', 'CANCELLED');
+
+-- Sample Available Times for Dr. Emily Adams (Doctor ID: 1)
+INSERT IGNORE INTO doctor_available_times (doctor_id, available_times) VALUES
+(1, '09:00 AM'),
+(1, '10:00 AM'),
+(1, '11:00 AM'),
+(1, '02:00 PM'),
+(1, '03:00 PM');

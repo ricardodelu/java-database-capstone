@@ -37,4 +37,6 @@ public class DoctorDTO {
     // For registration
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
+
+    private java.util.List<String> availableTimes;
 } 
