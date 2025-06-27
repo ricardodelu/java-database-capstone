@@ -15,13 +15,10 @@ const contentContainer = document.getElementById('content');
 // Initialize the dashboard
 async function initializeDashboard() {
     try {
-        // Load doctors data
         await loadDoctors();
-        
-
-        
-        // Initial render
+        populateSpecialtyFilter();
         renderDoctors(doctors);
+        setupEventListeners(); // Setup listeners after initial data is loaded
     } catch (error) {
         console.error('Failed to initialize dashboard:', error);
         showError('Failed to load dashboard data. Please try again later.');
@@ -122,32 +119,51 @@ function createDoctorCard(doctor) {
     return card;
 }
 
+// Populate the specialty filter dropdown
+function populateSpecialtyFilter() {
+    const specialties = [...new Set(doctors.map(d => d.specialty))];
+    specialties.sort().forEach(specialty => {
+        const option = document.createElement('option');
+        option.value = specialty;
+        option.textContent = specialty;
+        filterSpecialty.appendChild(option);
+    });
+}
+
 // Show booking modal
 function showBookingModal() {
     if (!selectedDoctor) {
         console.error("No doctor selected, cannot show modal.");
         return;
     }
-    console.log(`Showing booking modal for Dr. ${selectedDoctor.name}`);
-    
+
     const bookingForm = document.getElementById('bookingForm');
+    const messageDiv = document.getElementById('bookingMessage');
+
+    // Reset form and clear any previous messages
     if (bookingForm) {
         bookingForm.reset();
+        document.getElementById('bookingDoctorId').value = selectedDoctor.id;
     }
-    
-    const availableSlots = document.getElementById('availableSlots');
-    if (availableSlots) {
-        availableSlots.innerHTML = ''; // Clear existing options
+    if (messageDiv) {
+        messageDiv.textContent = '';
+        messageDiv.style.display = 'none';
+        messageDiv.className = 'booking-message';
+    }
+
+    const bookingTimeSelect = document.getElementById('bookingTime');
+    if (bookingTimeSelect) {
+        bookingTimeSelect.innerHTML = ''; // Clear existing options
         if (selectedDoctor.availableTimes && selectedDoctor.availableTimes.length > 0) {
-            availableSlots.innerHTML = '<option value="">Select a time slot</option>';
+            bookingTimeSelect.innerHTML = '<option value="">Select a time slot</option>';
             selectedDoctor.availableTimes.forEach(slot => {
                 const option = document.createElement('option');
                 option.value = slot;
                 option.textContent = slot;
-                availableSlots.appendChild(option);
+                bookingTimeSelect.appendChild(option);
             });
         } else {
-            availableSlots.innerHTML = '<option value="">No available slots for this doctor</option>';
+            bookingTimeSelect.innerHTML = '<option value="">No available slots for this doctor</option>';
         }
     }
 
@@ -163,13 +179,13 @@ function setupEventListeners() {
     // Modal elements
     const bookingForm = document.getElementById('bookingForm');
     const bookingDate = document.getElementById('bookingDate');
-    const availableSlots = document.getElementById('availableSlots');
+    const bookingTime = document.getElementById('bookingTime');
     const slotsLoader = document.getElementById('slotsLoader');
     const closeBookingModal = document.getElementById('closeBookingModal');
     const cancelBookingBtn = document.getElementById('cancelBooking');
 
-    if (!bookingForm || !bookingDate || !availableSlots || !slotsLoader || !closeBookingModal || !cancelBookingBtn) {
-        console.error('One or more modal elements could not be found. Check IDs in patient/base.html.');
+    if (!bookingForm || !bookingDate || !bookingTime || !slotsLoader || !closeBookingModal || !cancelBookingBtn) {
+        console.error('One or more modal elements could not be found. Check the IDs in patientDashboard.html.');
         return;
     }
 
@@ -198,6 +214,8 @@ function setupEventListeners() {
 
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log('[SUBMIT] Form submission initiated.');
+
         const doctorId = document.getElementById('bookingDoctorId').value;
         const patientId = 1; // Hardcoded for now, replace with actual patient ID
         const appointmentDate = document.getElementById('bookingDate').value;
@@ -205,41 +223,66 @@ function setupEventListeners() {
         const reason = document.getElementById('bookingReason').value;
         const messageDiv = document.getElementById('bookingMessage');
 
-        // Hide previous messages
+        console.log(`[SUBMIT] Data collected: date='${appointmentDate}', time='${appointmentTime12hr}'`);
+
+        // Hide previous messages and reset class
         messageDiv.style.display = 'none';
+        messageDiv.className = 'booking-message';
+
+        // Form validation
+        if (!appointmentDate || !appointmentTime12hr) {
+            messageDiv.textContent = 'Please select both a date and a time slot.';
+            messageDiv.className = 'booking-message error';
+            messageDiv.style.display = 'block';
+            console.error('[SUBMIT] Validation failed: Date or time not selected.');
+            return; // Stop the submission
+        }
+
+        console.log('[SUBMIT] Converting time to 24hr format.');
+        const time24hr = convertTo24Hour(appointmentTime12hr);
+        console.log(`[SUBMIT] Time converted to: ${time24hr}`);
 
         const bookingData = {
             doctorId,
             patientId,
             date: appointmentDate,
-            time: convertTo24Hour(appointmentTime12hr),
+            time: time24hr,
             reason,
         };
+        console.log('[SUBMIT] Booking data object created:', bookingData);
 
         try {
+            console.log('[SUBMIT] Sending fetch request to /api/appointments/book...');
             const response = await fetch('/api/appointments/book', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bookingData),
             });
+            console.log(`[SUBMIT] Received response with status: ${response.status}`);
 
             const result = await response.json();
+            console.log('[SUBMIT] Parsed JSON response:', result);
 
             if (response.ok) {
+                console.log('[SUBMIT] Response is OK. Showing success message.');
                 messageDiv.textContent = result.message || 'Appointment booked successfully!';
                 messageDiv.className = 'booking-message success';
+                messageDiv.style.display = 'block';
                 bookingForm.reset();
                 setTimeout(() => {
                     closeModal();
                 }, 2000); // Close modal after 2 seconds
             } else {
+                console.log('[SUBMIT] Response is NOT OK. Showing error message.');
                 messageDiv.textContent = result.error || 'Failed to book appointment. Please try again.';
                 messageDiv.className = 'booking-message error';
+                messageDiv.style.display = 'block';
             }
         } catch (error) {
-            console.error('Error booking appointment:', error);
+            console.error('[SUBMIT] An error occurred in the try-catch block:', error);
             messageDiv.textContent = 'An error occurred. Please check the console and try again.';
             messageDiv.className = 'booking-message error';
+            messageDiv.style.display = 'block';
         }
     });
 }
@@ -254,7 +297,4 @@ function showSuccess(message) {
 }
 
 // Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeDashboard();
-    setupEventListeners();
-}); 
+document.addEventListener('DOMContentLoaded', initializeDashboard); 
