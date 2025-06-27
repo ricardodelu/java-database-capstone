@@ -11,12 +11,6 @@ const searchBar = document.getElementById('searchBar');
 const filterTime = document.getElementById('filterTime');
 const filterSpecialty = document.getElementById('filterSpecialty');
 const contentContainer = document.getElementById('content');
-const modal = document.getElementById('modal');
-const closeModal = document.getElementById('closeModal');
-const bookingForm = document.getElementById('bookingForm');
-const appointmentDate = document.getElementById('appointmentDate');
-const appointmentTime = document.getElementById('appointmentTime');
-const appointmentReason = document.getElementById('appointmentReason');
 
 // Initialize the dashboard
 async function initializeDashboard() {
@@ -53,27 +47,7 @@ async function loadDoctors() {
     }
 }
 
-// Set up event listeners
-function setupEventListeners() {
-    // Search functionality
-    searchBar.addEventListener('input', handleSearch);
-    
-    // Filter functionality
-    filterTime.addEventListener('change', handleFilter);
-    filterSpecialty.addEventListener('change', handleFilter);
-    
-    // Modal functionality
-    closeModal.addEventListener('click', () => hideModal(modal));
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) hideModal(modal);
-    });
-    
-    // Booking form submission
-    bookingForm.addEventListener('submit', handleBookingSubmit);
-    
-    // Date selection for available time slots
-    appointmentDate.addEventListener('change', loadAvailableTimeSlots);
-}
+
 
 // Handle search input
 function handleSearch(e) {
@@ -151,24 +125,33 @@ function createDoctorCard(doctor) {
 
 // Show booking modal
 function showBookingModal() {
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
-    appointmentDate.min = today;
-    
-    // Reset form
-    bookingForm.reset();
-    
-    // Show modal
-    showModal(modal);
+    showModal('bookAppointment', { doctorName: selectedDoctor.name });
+
+    // Now that the modal is shown, get elements and add listeners
+    const bookingForm = document.getElementById('bookingForm');
+    const appointmentDate = document.getElementById('appointmentDate');
+
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', handleBookingSubmit);
+    }
+
+    if (appointmentDate) {
+        const today = new Date().toISOString().split('T')[0];
+        appointmentDate.min = today;
+        appointmentDate.addEventListener('change', loadAvailableTimeSlots);
+    }
 }
 
 // Load available time slots for selected date
 async function loadAvailableTimeSlots() {
-    if (!selectedDoctor || !appointmentDate.value) return;
+    const appointmentDate = document.getElementById('appointmentDate');
+    const appointmentTime = document.getElementById('appointmentTime');
+
+    if (!selectedDoctor || !appointmentDate || !appointmentDate.value) return;
     
     try {
         const date = appointmentDate.value;
-        const response = await fetch(`/api/doctors/${selectedDoctor.id}/availability?date=${date}`);
+        const response = await fetch(`/api/appointments/available-slots?doctorId=${selectedDoctor.id}&date=${date}`);
         
         if (!response.ok) throw new Error('Failed to fetch available time slots');
         
@@ -184,6 +167,8 @@ async function loadAvailableTimeSlots() {
                 option.textContent = slot;
                 appointmentTime.appendChild(option);
             });
+        } else {
+            appointmentTime.innerHTML = '<option value="">No slots available</option>';
         }
     } catch (error) {
         console.error('Error loading time slots:', error);
@@ -203,12 +188,16 @@ async function handleBookingSubmit(e) {
     const patientId = localStorage.getItem('patientId');
     console.log('Retrieved patient ID for booking:', patientId); // Debug log
 
+        const appointmentDate = document.getElementById('appointmentDate');
+    const appointmentTime = document.getElementById('appointmentTime');
+    const reason = document.getElementById('reason');
+
     const bookingData = {
         patientId: patientId,
         doctorId: selectedDoctor.id,
         date: appointmentDate.value,
         time: appointmentTime.value,
-        reason: appointmentReason.value
+        reason: reason.value
     };
     
     try {
@@ -250,5 +239,15 @@ function showSuccess(message) {
     alert(message); // Replace with a better UI notification
 }
 
+// Set up general event listeners
+function setupBaseEventListeners() {
+    searchBar.addEventListener('input', handleSearch);
+    filterTime.addEventListener('change', handleFilter);
+    filterSpecialty.addEventListener('change', handleFilter);
+}
+
 // Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', initializeDashboard); 
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDashboard();
+    setupBaseEventListeners();
+}); 
