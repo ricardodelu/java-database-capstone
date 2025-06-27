@@ -55,20 +55,6 @@ export class Modal {
                         <button type="submit">Login</button>
                     </form>
                 `;
-            case 'bookAppointment':
-                return `
-                    <h2>Book Appointment</h2>
-                    <form id="bookingForm">
-                        <p>Booking with: <strong>${data.doctorName}</strong></p>
-                        <label for="appointmentDate">Date:</label>
-                        <input type="date" id="appointmentDate" name="date" required>
-                        <label for="appointmentTime">Time:</label>
-                        <select id="appointmentTime" name="time" required></select>
-                        <label for="reason">Reason for visit:</label>
-                        <textarea id="reason" name="reason" rows="3"></textarea>
-                        <button type="submit">Book Appointment</button>
-                    </form>
-                `;
             default:
                 return '<p>Invalid modal type</p>';
         }

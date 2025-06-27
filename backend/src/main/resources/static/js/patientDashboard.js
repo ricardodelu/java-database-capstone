@@ -123,162 +123,143 @@ function createDoctorCard(doctor) {
 }
 
 // Show booking modal
-function getBookingFormHTML(doctor) {
-    return `
-        <h2>Book Appointment</h2>
-        <form id="bookingForm">
-            <p>Booking with: <strong>${doctor.name}</strong></p>
-            <label for="appointmentDate">Date:</label>
-            <input type="date" id="appointmentDate" name="date" required>
-            <label for="appointmentTime">Time:</label>
-            <select id="appointmentTime" name="time" required></select>
-            <label for="reason">Reason for visit:</label>
-            <textarea id="reason" name="reason" rows="3"></textarea>
-            <button type="submit">Book Appointment</button>
-        </form>
-    `;
-}
-
 function showBookingModal() {
-    const modalBody = document.getElementById('modal-body');
-    if (!modalBody) {
-        console.error('Modal body not found!');
-        return;
-    }
-
-    modalBody.innerHTML = getBookingFormHTML(selectedDoctor);
-    showModal();
-
-    // Add event listeners for the new modal content
-    const bookingForm = document.getElementById('bookingForm');
-    const appointmentDate = document.getElementById('appointmentDate');
-    const closeModal = document.getElementById('closeModal');
-    const modal = document.getElementById('modal');
-
-    if (bookingForm) {
-        bookingForm.addEventListener('submit', handleBookingSubmit);
-    }
-    if (appointmentDate) {
-        const today = new Date().toISOString().split('T')[0];
-        appointmentDate.min = today;
-        appointmentDate.addEventListener('change', loadAvailableTimeSlots);
-    }
-    if(closeModal) {
-        closeModal.addEventListener('click', () => hideModal());
-    }
-    if(modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) hideModal();
-        });
-    }
-}
-
-// Load available time slots for selected date
-async function loadAvailableTimeSlots() {
-    const appointmentDate = document.getElementById('appointmentDate');
-    const appointmentTime = document.getElementById('appointmentTime');
-
-    if (!selectedDoctor || !appointmentDate || !appointmentDate.value) return;
-    
-    try {
-        const date = appointmentDate.value;
-        const response = await fetch(`/api/appointments/available-slots?doctorId=${selectedDoctor.id}&date=${date}`);
-        
-        if (!response.ok) throw new Error('Failed to fetch available time slots');
-        
-        const data = await response.json();
-        const timeSlots = data.availableSlots;
-        
-        // Populate time slots dropdown
-        appointmentTime.innerHTML = '<option value="">Select a time slot</option>';
-        if (timeSlots && timeSlots.length > 0) {
-            timeSlots.forEach(slot => {
-                const option = document.createElement('option');
-                option.value = slot;
-                option.textContent = slot;
-                appointmentTime.appendChild(option);
-            });
-        } else {
-            appointmentTime.innerHTML = '<option value="">No slots available</option>';
-        }
-    } catch (error) {
-        console.error('Error loading time slots:', error);
-        showError('Failed to load available time slots. Please try again.');
-    }
-}
-
-// Handle booking form submission
-async function handleBookingSubmit(e) {
-    e.preventDefault();
-    
     if (!selectedDoctor) {
-        showError('Please select a doctor first.');
+        console.error("No doctor selected, cannot show modal.");
         return;
     }
+    console.log(`Showing booking modal for Dr. ${selectedDoctor.name}`);
     
-    const patientId = localStorage.getItem('patientId');
-    console.log('Retrieved patient ID for booking:', patientId); // Debug log
-
-        const appointmentDate = document.getElementById('appointmentDate');
-    const appointmentTime = document.getElementById('appointmentTime');
-    const reason = document.getElementById('reason');
-
-    const bookingData = {
-        patientId: patientId,
-        doctorId: selectedDoctor.id,
-        date: appointmentDate.value,
-        time: appointmentTime.value,
-        reason: reason.value
-    };
-    
-    try {
-        const response = await fetch('/api/appointments/book', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bookingData)
-        });
-        
-        if (!response.ok) throw new Error('Failed to book appointment');
-        
-        const result = await response.json();
-        
-        // Show success message
-        showSuccess('Appointment booked successfully!');
-        
-        // Hide modal
-        hideModal(modal);
-        
-        // Refresh appointments list if needed
-        // You might want to update a separate appointments view here
-        
-    } catch (error) {
-        console.error('Error booking appointment:', error);
-        showError('Failed to book appointment. Please try again.');
+    // Reset form fields
+    const bookingForm = document.getElementById('bookingForm');
+    if (bookingForm) {
+        bookingForm.reset();
     }
+    const availableSlots = document.getElementById('availableSlots');
+    if (availableSlots) {
+        availableSlots.innerHTML = '<option value="">Select a date to see available slots</option>';
+    }
+
+    showModal('bookingModal');
+}
+
+function setupEventListeners() {
+    // Page filters
+    searchBar.addEventListener('input', handleSearch);
+    filterTime.addEventListener('change', handleFilter);
+    filterSpecialty.addEventListener('change', handleFilter);
+
+    // Modal elements
+    const bookingForm = document.getElementById('bookingForm');
+    const bookingDate = document.getElementById('bookingDate');
+    const availableSlots = document.getElementById('availableSlots');
+    const slotsLoader = document.getElementById('slotsLoader');
+    const closeBookingModal = document.getElementById('closeBookingModal');
+    const cancelBookingBtn = document.getElementById('cancelBooking');
+
+    if (!bookingForm || !bookingDate || !availableSlots || !slotsLoader || !closeBookingModal || !cancelBookingBtn) {
+        console.error('One or more modal elements could not be found. Check IDs in patient/base.html.');
+        return;
+    }
+
+    // Set min date for date picker
+    bookingDate.min = new Date().toISOString().split('T')[0];
+
+    // Event listener for closing the modal
+    const closeModal = () => hideModal('bookingModal');
+    closeBookingModal.addEventListener('click', closeModal);
+    cancelBookingBtn.addEventListener('click', closeModal);
+
+    // Event listener for date change to fetch available slots
+    bookingDate.addEventListener('change', async () => {
+        const selectedDate = bookingDate.value;
+        if (!selectedDate || !selectedDoctor) return;
+
+        slotsLoader.style.display = 'block';
+        availableSlots.innerHTML = '<option value="">Loading...</option>';
+
+        try {
+            const response = await fetch(`/api/appointments/available-slots?doctorId=${selectedDoctor.id}&date=${selectedDate}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const slots = await response.json();
+            availableSlots.innerHTML = '<option value="">Select a time slot</option>';
+            if (slots.length > 0) {
+                slots.forEach(slot => {
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = slot;
+                    availableSlots.appendChild(option);
+                });
+            } else {
+                availableSlots.innerHTML = '<option value="">No available slots</option>';
+            }
+        } catch (error) {
+            console.error('Error fetching available slots:', error);
+            availableSlots.innerHTML = '<option value="">Error loading slots</option>';
+        } finally {
+            slotsLoader.style.display = 'none';
+        }
+    });
+
+    // Event listener for form submission
+    bookingForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const patientId = localStorage.getItem('patientId');
+        if (!patientId) {
+            alert('You must be logged in to book an appointment.');
+            return;
+        }
+
+        if (!selectedDoctor) {
+            alert('An error occurred. No doctor selected.');
+            return;
+        }
+
+        const formData = new FormData(bookingForm);
+        const bookingData = {
+            patientId: parseInt(patientId, 10),
+            doctorId: selectedDoctor.id,
+            date: formData.get('date'),
+            time: formData.get('time'),
+            reason: formData.get('reason'),
+        };
+
+        console.log('Submitting booking data:', bookingData);
+
+        try {
+            const response = await fetch('/api/appointments/book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingData),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Appointment booked successfully!');
+                hideModal('bookingModal');
+            } else {
+                alert(`Booking failed: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error booking appointment:', error);
+            alert('An error occurred while booking the appointment.');
+        }
+    });
 }
 
 // Utility functions for notifications
 function showError(message) {
-    // Implement your error notification system here
-    alert(message); // Replace with a better UI notification
+    alert(message);
 }
 
 function showSuccess(message) {
-    // Implement your success notification system here
-    alert(message); // Replace with a better UI notification
-}
-
-// Set up general event listeners
-function setupBaseEventListeners() {
-    searchBar.addEventListener('input', handleSearch);
-    filterTime.addEventListener('change', handleFilter);
-    filterSpecialty.addEventListener('change', handleFilter);
+    alert(message);
 }
 
 // Initialize the dashboard when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     initializeDashboard();
-    setupBaseEventListeners();
+    setupEventListeners();
 }); 
