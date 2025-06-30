@@ -20,7 +20,7 @@
 }
 
 .searchBar:focus {
-    border-color: #2196F3;
+    border-color: #007bff;
     outline: none;
 }
 
@@ -105,7 +105,7 @@
 }
 
 .btn-book {
-    background: #2196F3;
+    background: #007bff;
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -116,7 +116,7 @@
 }
 
 .btn-book:hover {
-    background: #1976D2;
+    background: #0056b3;
 }
 
 /* Modal Styles */
@@ -186,7 +186,7 @@
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    border-color: #2196F3;
+    border-color: #007bff;
     outline: none;
 }
 
