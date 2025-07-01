@@ -32,20 +32,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
+            logger.debug("Processing JWT authentication for request: {}", request.getRequestURI());
             
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-                String username = tokenProvider.getUsernameFromJWT(jwt);
+            if (StringUtils.hasText(jwt)) {
+                logger.debug("JWT token found in request");
                 
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken(
-                        userDetails, 
-                        null, 
-                        userDetails.getAuthorities()
-                    );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (tokenProvider.validateToken(jwt)) {
+                    String username = tokenProvider.getUsernameFromJWT(jwt);
+                    logger.debug("JWT token validated for user: {}", username);
+                    
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                    logger.debug("User details loaded for: {}", username);
+                    
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(
+                            userDetails, 
+                            null, 
+                            userDetails.getAuthorities()
+                        );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.info("Authenticated user: {}, roles: {}", username, userDetails.getAuthorities());
+                } else {
+                    logger.warn("JWT token validation failed");
+                }
+            } else {
+                logger.debug("No JWT token found in request");
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);

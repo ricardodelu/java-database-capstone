@@ -17,6 +17,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,6 +27,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
     
     private final JwtAuthEntryPoint authEntryPoint;
     private final CustomUserDetailsService userDetailsService;
@@ -45,10 +49,25 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(
+                    "/",
+                    "/index.html",
+                    "/static/**",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**",
+                    "/favicon.ico",
+                    "/api/auth/**"
+                ).permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
-            );
+            )
+            .formLogin()
+                .loginPage("/index.html")
+                .permitAll()
+                .and()
+            .logout()
+                .permitAll();
             
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
@@ -58,15 +77,24 @@ public class SecurityConfig {
     
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
+        logger.info("Configuring DaoAuthenticationProvider");
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
+        
+        // Enable debug logging for authentication
+        authProvider.setHideUserNotFoundExceptions(false);
+        
+        logger.info("DaoAuthenticationProvider configured with userDetailsService and passwordEncoder");
         return authProvider;
     }
     
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
+        logger.info("Configuring AuthenticationManager");
+        AuthenticationManager authenticationManager = authConfig.getAuthenticationManager();
+        logger.info("AuthenticationManager configured");
+        return authenticationManager;
     }
     
     @Bean
@@ -76,20 +104,39 @@ public class SecurityConfig {
     
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        logger.info("Configuring BCryptPasswordEncoder");
+        PasswordEncoder encoder = new BCryptPasswordEncoder();
+        logger.info("BCryptPasswordEncoder configured");
+        return encoder;
     }
     
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        logger.info("Configuring CORS");
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Update with your frontend URL
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
-        configuration.setExposedHeaders(List.of("x-auth-token"));
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "http://localhost"
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "X-Requested-With",
+            "Cache-Control"
+        ));
+        configuration.setExposedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Disposition"
+        ));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        logger.info("CORS configuration applied to all endpoints");
         return source;
     }
 }

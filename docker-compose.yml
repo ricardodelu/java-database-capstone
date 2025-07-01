@@ -2,19 +2,20 @@ version: '3.8'
 
 services:
   app:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile
     container_name: clinic_app
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/cms
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/cms?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
-      - SPRING_DATA_MONGODB_HOST=mongodb
-      - SPRING_DATA_MONGODB_PORT=27017
-      - SPRING_DATA_MONGODB_DATABASE=cms
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/cms
+      - SPRING_PROFILES_ACTIVE=prod
+      - APP_JWT_SECRET=this-is-a-very-secure-key-that-is-more-than-64-characters-long-1234567890-abcdefghijklmnopqrstuvwxyz
+      - APP_JWT_EXPIRATION_MS=86400000
     depends_on:
       mysql:
         condition: service_healthy
@@ -35,7 +36,7 @@ services:
       - mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 10s
       timeout: 5s
       retries: 5
