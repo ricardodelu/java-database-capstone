@@ -1,5 +1,5 @@
 // Import utility functions
-import { showModal, hideModal, createRipple } from './util.js';
+import { showModal, hideModal, createRipple } from '../util.js';
 
 // State management
 let doctors = [];

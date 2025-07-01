@@ -64,11 +64,11 @@ class App {
             switch (role) {
                 case 'admin':
                     // Dynamically import and instantiate AdminDashboardService
-                    const { AdminDashboardService } = await import('./services/adminDashboard.js');
+                    const { AdminDashboardService } = await import('./pages/adminDashboard.js');
                     new AdminDashboardService();
                     break;
                 case 'doctor':
-                    const { DoctorDashboard } = await import('./services/doctorDashboard.js');
+                    const { DoctorDashboard } = await import('./pages/doctorDashboard.js');
                     new DoctorDashboard();
                     break;
                 case 'patient':
