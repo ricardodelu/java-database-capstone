@@ -51,8 +51,15 @@ public class AuthController {
                 loginRequest.getPassword()
             );
             
-            logger.debug("Attempting authentication with authentication manager");
-            Authentication authentication = authenticationManager.authenticate(authenticationToken);
+            logger.debug("Attempting authentication with authentication manager for user: {}", username);
+            Authentication authentication = null;
+            try {
+                authentication = authenticationManager.authenticate(authenticationToken);
+                logger.debug("Authentication successful for user: {}", username);
+            } catch (Exception e) {
+                logger.error("Authentication failed for user: {}", username, e);
+                throw e;
+            }
             
             logger.debug("Authentication successful, setting security context");
             SecurityContextHolder.getContext().setAuthentication(authentication);

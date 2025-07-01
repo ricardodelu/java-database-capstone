@@ -40,6 +40,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         logger.info("Attempting to load user by username: {}", username);
         
+        if (username == null || username.trim().isEmpty()) {
+            logger.error("Username is null or empty");
+            throw new UsernameNotFoundException("Username cannot be empty");
+        }
+        
         try {
             // Try to find user in each repository
             // Try to find admin by username
@@ -88,9 +93,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails buildUserDetails(String username, String password, String role) {
+        logger.debug("Building UserDetails for username: {}, role: {}", username, role);
+        
+        if (password == null || password.trim().isEmpty()) {
+            logger.error("Password is null or empty for user: {}", username);
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority(role));
         
+        logger.debug("Created UserDetails with username: {}, role: {}", username, role);
         return new User(username, password, authorities);
     }
 }

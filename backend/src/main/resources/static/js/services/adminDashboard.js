@@ -271,7 +271,10 @@ class AdminDashboardService {
     }
 }
 
+// Export the class for use in other modules
+export { AdminDashboardService };
+
 // Initialize the service when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new AdminDashboardService();
-}); 
+});

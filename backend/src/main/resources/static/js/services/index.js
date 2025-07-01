@@ -44,8 +44,16 @@ class LoginHandler {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Login failed');
+                let errorMessage = `Login failed with status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.error || errorMessage;
+                    console.error('Login error details:', errorData);
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.error('Failed to parse error response:', errorText);
+                }
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
@@ -77,7 +85,7 @@ class LoginHandler {
                     if (role === 'admin') {
                         // Initialize the admin dashboard
                         import('./adminDashboard.js').then(module => {
-                            new module.AdminDashboard();
+                            new module.AdminDashboardService();
                         }).catch(error => {
                             console.error('Error loading admin dashboard:', error);
                             window.location.href = '/';

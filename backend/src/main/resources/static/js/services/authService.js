@@ -2,6 +2,7 @@ class AuthService {
     constructor() {
         this.tokenKey = 'jwtToken';
         this.userKey = 'user';
+        this.currentUser = null;
     }
 
     // Store the JWT token and user info in localStorage
@@ -50,6 +51,43 @@ class AuthService {
     clearAuth() {
         localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
+        this.currentUser = null;
+    }
+    
+    // Alias for clearAuth (for compatibility)
+    logout() {
+        this.clearAuth();
+        // Redirect to login page or home page after logout
+        window.location.href = '/';
+    }
+    
+    // Get the current authenticated user
+    getCurrentUser() {
+        if (!this.currentUser) {
+            const userData = localStorage.getItem(this.userKey);
+            if (userData) {
+                this.currentUser = JSON.parse(userData);
+            }
+        }
+        return this.currentUser;
+    }
+    
+    // Check if current user has admin role
+    isAdmin() {
+        const user = this.getCurrentUser();
+        return user && user.roles && user.roles.includes('ROLE_ADMIN');
+    }
+    
+    // Check if current user has doctor role
+    isDoctor() {
+        const user = this.getCurrentUser();
+        return user && user.roles && user.roles.includes('ROLE_DOCTOR');
+    }
+    
+    // Check if current user has patient role
+    isPatient() {
+        const user = this.getCurrentUser();
+        return user && user.roles && user.roles.includes('ROLE_PATIENT');
     }
 
     // Get auth header for API requests
