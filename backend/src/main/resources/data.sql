@@ -1,28 +1,28 @@
 -- Sample Admin Data
 INSERT IGNORE INTO admin (username, password) VALUES 
-('admin', 'admin123'),
-('testadmin', 'password');
+('admin', '$2a$10$Et7qeaZS0wHaS7cPqxOPDulVViCumgNTjRH59M5HkJ4bFEEJUSz.i'),
+('testadmin', '$2a$10$LrRiUWe8lSdZZeRsVyLDLOzulvgtirbbJCVknH4GNDad9iQw2ZBKS');
 
 -- Sample Doctor Data
 INSERT IGNORE INTO doctor (email, name, password, phone_number, specialty, license_number) VALUES
-('dr.adams@example.com', 'Dr. Emily Adams', 'pass12345', '5551012020', 'Cardiology', 'LIC-112233'),
-('dr.johnson@example.com', 'Dr. Mark Johnson', 'secure4567', '5552023030', 'Neurology', 'LIC-445566'),
-('dr.lee@example.com', 'Dr. Sarah Lee', 'leePass987', '5553034040', 'Orthopedics', 'LIC-778899'),
-('dr.wilson@example.com', 'Dr. Tom Wilson', 'w!ls0nPwd', '5554045050', 'Pediatrics', 'LIC-101112'),
-('dr.brown@example.com', 'Dr. Alice Brown', 'brownie123', '5555056060', 'Dermatology', 'LIC-131415'),
-('dr.taylor@example.com', 'Dr. Taylor Grant', 'taylor321', '5556067070', 'Cardiology', 'LIC-161718'),
-('dr.white@example.com', 'Dr. Sam White', 'whiteSecure1', '5557078080', 'Neurology', 'LIC-192021'),
-('dr.clark@example.com', 'Dr. Emma Clark', 'clarkPass456', '5558089090', 'Orthopedics', 'LIC-222324'),
-('dr.davis@example.com', 'Dr. Olivia Davis', 'davis789', '5559090101', 'Pediatrics', 'LIC-252627'),
-('dr.miller@example.com', 'Dr. Henry Miller', 'millertime!', '5550101111', 'Dermatology', 'LIC-282930');
+('dr.adams@example.com', 'Dr. Emily Adams', '$2a$10$bM6wi6Kg29tb9aUlPMBZDewNT8cMlxqL3LysDl0FBG5xPfBr/cjT6', '5551012020', 'Cardiology', 'LIC-112233'),
+('dr.johnson@example.com', 'Dr. Mark Johnson', '$2a$10$PDZiDtpeJ9YZmvMD94kkouBcEm9NehCQDee8D4zomzm6OBWWssZfi', '5552023030', 'Neurology', 'LIC-445566'),
+('dr.lee@example.com', 'Dr. Sarah Lee', '$2a$10$78aOL8QFv/zCg.n2JKHwPesDSete8oGJEWDC69A5DtCDGa3Lt/HyK', '5553034040', 'Orthopedics', 'LIC-778899'),
+('dr.wilson@example.com', 'Dr. Tom Wilson', '$2a$10$T/ruTWzXgpmxJZKJkOjAWugS/KGpaDovFmiXozWv4ppyKsxAkr9g6', '5554045050', 'Pediatrics', 'LIC-101112'),
+('dr.brown@example.com', 'Dr. Alice Brown', '$2a$10$A9YAW75Uggapf.0wyWBctO3MWjS5AJNqiwQ42KsNC7HoYxhtjXQzu', '5555056060', 'Dermatology', 'LIC-131415'),
+('dr.taylor@example.com', 'Dr. Taylor Grant', '$2a$10$LnxK0fwALi.pHMzs7.KGj.51z6TrK8pLjM5D1WDMJFK5ydU7wzrbK', '5556067070', 'Cardiology', 'LIC-161718'),
+('dr.white@example.com', 'Dr. Sam White', '$2a$10$jos6z1EsliZy/9Gly.MEu.qC48U2GjCQ8.jnwJdxXjb.enZm990vu', '5557078080', 'Neurology', 'LIC-192021'),
+('dr.clark@example.com', 'Dr. Emma Clark', '$2a$10$g/PXRJHtxabPo0elbxfbJOa6KdFx8vxhDLcyXorQK9MSj8hLXacqS', '5558089090', 'Orthopedics', 'LIC-222324'),
+('dr.davis@example.com', 'Dr. Olivia Davis', '$2a$10$3FdOO.GAnyc.7eIM9CRdrOoVCpKroc5RnuDDrTsYED2/6aB5h13jG', '5559090101', 'Pediatrics', 'LIC-252627'),
+('dr.miller@example.com', 'Dr. Henry Miller', '$2a$10$6LsoJgdoow0unsxKbRFaH.CizfWA5t6kpZYqE07KNx8RNJFWw6YwS', '5550101111', 'Dermatology', 'LIC-282930');
 
 -- Sample Patient Data
 INSERT IGNORE INTO patient (address, email, name, password, phone_number) VALUES
-('101 Oak St, Cityville', 'jane.doe@example.com', 'Jane Doe', 'passJane1', '888-111-1111'),
-('202 Maple Rd, Townsville', 'john.smith@example.com', 'John Smith', 'smithSecure', '888-222-2222'),
-('303 Pine Ave, Villageton', 'emily.rose@example.com', 'Emily Rose', 'emilyPass99', '888-333-3333'),
-('404 Birch Ln, Metropolis', 'michael.j@example.com', 'Michael Jordan', 'airmj23', '888-444-4444'),
-('505 Cedar Blvd, Springfield', 'olivia.m@example.com', 'Olivia Moon', 'moonshine12', '888-555-5555');
+('101 Oak St, Cityville', 'jane.doe@example.com', 'Jane Doe', '$2a$10$24qSYaZzOzZBgvlsMLifpe7gKlt8GqIY7eiLj/wvyBu6qsqACSBOu', '888-111-1111'),
+('202 Maple Rd, Townsville', 'john.smith@example.com', 'John Smith', '$2a$10$4rSsiOKVfDYrspznkdl4M.8ddxfNKmZHphE44EEIVgIt7D2d8Mt56', '888-222-2222'),
+('303 Pine Ave, Villageton', 'emily.rose@example.com', 'Emily Rose', '$2a$10$GEXh3hKb13POI2oCqP4tne7aHBAPN5L1JzoklD9NiCsV1pPTvq4mG', '888-333-3333'),
+('404 Birch Ln, Metropolis', 'michael.j@example.com', 'Michael Jordan', '$2a$10$TodojJ4Gmu5VusJYT9CKhOS36vcL4fmRAKfIbpumhf/kJ8KmvvrwK', '888-444-4444'),
+('505 Cedar Blvd, Springfield', 'olivia.m@example.com', 'Olivia Moon', '$2a$10$rXwbMFg1n5Hrk.6BkSlZu.0UapolqLnHHoOYbdr2M616Mpc/.7doK', '888-555-5555');
 -- Sample Appointments
 INSERT INTO appointment (doctor_id, patient_id, appointment_time, status) VALUES
 (1, 1, '2025-07-10 09:00:00', 'SCHEDULED'),
