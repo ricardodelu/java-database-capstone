@@ -31,18 +31,29 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <div class="role-selection-container">
-            <h2 class="role-heading">Select Your Role</h2>
-            <div class="role-buttons">
-                <button id="adminBtn" class="role-btn">Admin</button>
-                <button id="doctorBtn" class="role-btn" data-role="doctor">Doctor</button>
-                <button id="patientBtn" class="role-btn">Patient</button>
+        <!-- Dynamic content will be loaded here -->
+        <div id="main-content">
+            <!-- Default content: role selection -->
+            <div class="role-selection-container">
+                <h2 class="role-heading">Select Your Role</h2>
+                <div class="role-buttons">
+                    <button id="adminBtn" class="role-btn">Admin</button>
+                    <button id="doctorBtn" class="role-btn" data-role="doctor">Doctor</button>
+                    <button id="patientBtn" class="role-btn">Patient</button>
+                </div>
             </div>
         </div>
     </main>
 
     <!-- Footer -->
     <div th:replace="~{fragments/footer :: footer}"></div>
+    
+    <!-- Auth Service -->
+    <script type="module" src="/js/services/authService.js"></script>
+    <script type="module" src="/js/services/apiService.js"></script>
+    
+    <!-- Main App -->
+    <script type="module" src="/js/main.js"></script>
 
     <!-- Modal -->
     <div id="modal" class="modal">

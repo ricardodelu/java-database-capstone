@@ -17,6 +17,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,35 +41,62 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // Configure exception handling first
+        http.exceptionHandling(exception -> exception
+            .authenticationEntryPoint(authEntryPoint)
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.getWriter().write("{\"error\":\"Access Denied\"}");
+            })
+        );
+
         http
-            .cors().and()
-            .csrf().disable()
-            .exceptionHandling()
-                .authenticationEntryPoint(authEntryPoint)
-                .and()
-            .sessionManagement()
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
+            )
             .authorizeHttpRequests(auth -> auth
+                // Public access to login page and static resources
                 .requestMatchers(
                     "/",
-                    "/index.html",
+                    "/login",
+                    "/login.html",
                     "/static/**",
+                    "/assets/**",
                     "/css/**",
                     "/js/**",
                     "/images/**",
-                    "/favicon.ico",
-                    "/api/auth/**"
+                    "/favicon.ico"
                 ).permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Public access to authentication endpoints
+                .requestMatchers("/api/auth/**").permitAll()
+                // Public access to API documentation
+                .requestMatchers(
+                    "/v3/api-docs/**", 
+                    "/swagger-ui/**", 
+                    "/swagger-ui.html",
+                    "/webjars/**"
+                ).permitAll()
+                // Role-based access control for dashboards
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/doctor/**").hasRole("DOCTOR")
+                .requestMatchers("/patient/**").hasRole("PATIENT")
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
-            .formLogin()
-                .loginPage("/index.html")
+            // Disable form login for API endpoints
+            .formLogin(form -> form.disable())
+            // Configure logout
+            .logout(logout -> logout
+                .logoutUrl("/api/auth/signout")
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"message\":\"Logout successful\"}");
+                })
                 .permitAll()
-                .and()
-            .logout()
-                .permitAll();
+            );
             
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

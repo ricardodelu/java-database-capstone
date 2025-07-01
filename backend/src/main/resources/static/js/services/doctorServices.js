@@ -1,34 +1,20 @@
-import { API_BASE_URL } from '../config/config.js';
+import { apiService } from './apiService.js';
 
-const DOCTOR_API = `${API_BASE_URL}/api/doctors`;
+const DOCTOR_API = '/doctors';
 
 class DoctorService {
     async getAllDoctors() {
         try {
-            const response = await fetch(DOCTOR_API);
-            if (!response.ok) {
-                throw new Error('Failed to fetch doctors');
-            }
-            return await response.json();
+            return await apiService.get(DOCTOR_API);
         } catch (error) {
             console.error('Error fetching doctors:', error);
             return [];
         }
     }
 
-    async deleteDoctor(doctorId, token) {
+    async deleteDoctor(doctorId) {
         try {
-            const response = await fetch(`${DOCTOR_API}/${doctorId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete doctor');
-            }
-
+            await apiService.delete(`${DOCTOR_API}/${doctorId}`);
             return {
                 success: true,
                 message: 'Doctor deleted successfully'
@@ -37,68 +23,35 @@ class DoctorService {
             console.error('Error deleting doctor:', error);
             return {
                 success: false,
-                message: error.message
+                message: error.message || 'Failed to delete doctor'
             };
         }
     }
 
-    async saveDoctor(doctorData, token) {
+    async saveDoctor(doctorData) {
         try {
-            const response = await fetch(DOCTOR_API, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(doctorData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save doctor');
-            }
-
-            const savedDoctor = await response.json();
-            return {
-                success: true,
-                data: savedDoctor,
-                message: 'Doctor saved successfully'
-            };
+            return await apiService.post(DOCTOR_API, doctorData);
         } catch (error) {
             console.error('Error saving doctor:', error);
-            return {
-                success: false,
-                message: error.message
-            };
+            throw error;
         }
     }
 
-    async updateDoctor(doctorId, doctorData, token) {
+    async updateDoctor(doctorId, doctorData) {
         try {
-            const response = await fetch(`${DOCTOR_API}/${doctorId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(doctorData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update doctor');
-            }
-
-            const updatedDoctor = await response.json();
-            return {
-                success: true,
-                data: updatedDoctor,
-                message: 'Doctor updated successfully'
-            };
+            return await apiService.put(`${DOCTOR_API}/${doctorId}`, doctorData);
         } catch (error) {
             console.error('Error updating doctor:', error);
-            return {
-                success: false,
-                message: error.message
-            };
+            throw error;
+        }
+    }
+
+    async getDoctorById(doctorId) {
+        try {
+            return await apiService.get(`${DOCTOR_API}/${doctorId}`);
+        } catch (error) {
+            console.error('Error fetching doctor:', error);
+            throw error;
         }
     }
 
@@ -111,13 +64,7 @@ class DoctorService {
             if (filters.availability) queryParams.append('availability', filters.availability);
 
             const url = `${DOCTOR_API}/search?${queryParams.toString()}`;
-            const response = await fetch(url);
-
-            if (!response.ok) {
-                throw new Error('Failed to filter doctors');
-            }
-
-            return await response.json();
+            return await apiService.get(url);
         } catch (error) {
             console.error('Error filtering doctors:', error);
             return [];

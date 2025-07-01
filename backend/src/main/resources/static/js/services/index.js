@@ -64,10 +64,34 @@ class LoginHandler {
                     ? result.roles[0].replace('ROLE_', '').toLowerCase()
                     : 'user';
                 
-                // Redirect based on role
-                const redirectUrl = `${window.location.origin}/${role}/dashboard`;
-                console.log('Login successful, redirecting to:', redirectUrl);
-                window.location.replace(redirectUrl);
+                // Instead of redirecting, load the dashboard content via JavaScript
+                console.log('Login successful, loading dashboard content');
+                
+                // Load the dashboard content
+                const contentDiv = document.getElementById('main-content');
+                if (contentDiv) {
+                    // Clear existing content
+                    contentDiv.innerHTML = '';
+                    
+                    // Load the dashboard based on role
+                    if (role === 'admin') {
+                        // Initialize the admin dashboard
+                        import('./adminDashboard.js').then(module => {
+                            new module.AdminDashboard();
+                        }).catch(error => {
+                            console.error('Error loading admin dashboard:', error);
+                            window.location.href = '/';
+                        });
+                    } else {
+                        // Handle other roles or redirect to home
+                        window.location.href = '/';
+                    }
+                } else {
+                    // Fallback to full page reload if SPA structure not found
+                    const redirectUrl = `${window.location.origin}/${role}/dashboard`;
+                    console.warn('SPA structure not found, falling back to full page load');
+                    window.location.href = redirectUrl;
+                }
             } else {
                 throw new Error('No token received');
             }

@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -65,27 +67,33 @@ public class AuthController {
             
             logger.info("=== AUTHENTICATION SUCCESSFUL for user: {}, roles: {} ===", username, roles);
             
-            return ResponseEntity.ok(new JwtResponse(
-                jwt,
-                authentication.getName(),
-                roles
-            ));
+            // Create response
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", jwt);
+            response.put("username", authentication.getName());
+            response.put("roles", roles);
+            
+            return ResponseEntity.ok(response);
+            
         } catch (BadCredentialsException e) {
             logger.error("Authentication failed - Bad credentials for user: {}", username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Authentication failed: Invalid username or password");
+                .body(Map.of("error", "Authentication failed: Invalid username or password"));
+                
         } catch (DisabledException e) {
             logger.error("Authentication failed - User account is disabled: {}", username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Authentication failed: User account is disabled");
+                .body(Map.of("error", "Authentication failed: User account is disabled"));
+                
         } catch (LockedException e) {
             logger.error("Authentication failed - User account is locked: {}", username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Authentication failed: User account is locked");
+                .body(Map.of("error", "Authentication failed: User account is locked"));
+                
         } catch (Exception e) {
             logger.error("Authentication failed for user: {}", username, e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Authentication failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Authentication failed: " + e.getMessage()));
         }
     }
 }

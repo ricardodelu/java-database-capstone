@@ -16,14 +16,28 @@ class ApiService {
 
     // Get request with auth
     async get(endpoint) {
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...authService.getAuthHeader()
-            }
-        });
-        return this.handleResponse(response);
+        const url = `${this.baseUrl}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...authService.getAuthHeader()
+        };
+        
+        console.log(`Making GET request to: ${url}`);
+        console.log('Request headers:', headers);
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers,
+                credentials: 'include' // Important for cookies if using them
+            });
+            
+            console.log(`Response status for ${url}:`, response.status);
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error(`Error in GET ${url}:`, error);
+            throw error;
+        }
     }
 
     // Post request with auth

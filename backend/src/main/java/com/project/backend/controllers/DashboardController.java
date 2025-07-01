@@ -16,6 +16,11 @@ import java.util.stream.Collectors;
 @Controller
 public class DashboardController {
 
+    @GetMapping("/login")
+    public String login() {
+        return "index";
+    }
+
     @Autowired
     private DoctorService doctorService;
 
