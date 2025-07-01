@@ -9,6 +9,7 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/assets/images/logo/logo.png">
     
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -17,56 +18,44 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/index.css">
     <link rel="stylesheet" href="/assets/css/modal.css">
-    
-    <!-- Utility Scripts -->
-    <script type="module" src="/js/util.js"></script>    
-    
-
 </head>
 <body>
-<div class="wrapper">
-    <!-- Header -->
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="wrapper">
+        <!-- Header -->
+        <div id="header"></div>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Dynamic content will be loaded here -->
-        <div id="main-content">
-            <!-- Default content: role selection -->
-            <div class="role-selection-container">
-                <h2 class="role-heading">Select Your Role</h2>
-                <div class="role-buttons">
-                    <button id="adminBtn" class="role-btn">Admin</button>
-                    <button id="doctorBtn" class="role-btn" data-role="doctor">Doctor</button>
-                    <button id="patientBtn" class="role-btn">Patient</button>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="wrapper">
+                    <h2>Select Your Role</h2>
+                    <div class="role-buttons">
+                        <button id="adminBtn" class="role-btn" onclick="selectRole('admin')">Admin</button>
+                        <button id="doctorBtn" class="role-btn" onclick="selectRole('doctor')">Doctor</button>
+                        <button id="patientBtn" class="role-btn" onclick="selectRole('patient')">Patient</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <!-- Footer -->
-    <div th:replace="~{fragments/footer :: footer}"></div>
-    
-    <!-- Auth Service -->
-    <script type="module" src="/js/services/authService.js"></script>
-    <script type="module" src="/js/services/apiService.js"></script>
-    
-    <!-- Utility Scripts -->
-    <script type="module" src="/js/util.js"></script>
-    
-    <!-- Main App -->
-    <script type="module" src="/js/main.js"></script>
+        <!-- Footer -->
+        <div id="footer"></div>
 
-    <!-- Modal -->
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <span id="closeModal" class="close">&times;</span>
-            <div id="modal-body"></div>
+        <!-- Modal -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span id="closeModal" class="close">&times;</span>
+                <div id="modal-body"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Services -->
+    <!-- Scripts -->
+    <script src="/js/util.js" defer></script>
+    <script src="/js/render.js" defer></script>
+    <script src="/js/components/header.js" defer></script>
+    <script src="/js/components/footer.js" defer></script>
     <script type="module" src="/js/services/index.js" defer></script>
-</div>
+    <script type="module" src="/js/main.js" defer></script>
 </body>
 </html>
