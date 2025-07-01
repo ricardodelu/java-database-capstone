@@ -16,7 +16,5 @@ jobs:
           java-version: '17'
 
       - name: Compile with Maven
-        run: |
-          cd app
-          mvn clean compile
-  
+        working-directory: backend
+        run: mvn clean compile
