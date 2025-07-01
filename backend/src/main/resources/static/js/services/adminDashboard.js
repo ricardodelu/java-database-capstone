@@ -1,6 +1,13 @@
+import { apiService } from './apiService.js';
+
 // Admin Dashboard Service
 class AdminDashboardService {
     constructor() {
+        // Check authentication before proceeding
+        if (!apiService.checkAuth('ADMIN')) {
+            return;
+        }
+        
         this.doctors = [];
         this.editingDoctorId = null; // For tracking edits
         this.searchBar = document.getElementById('searchBar');
@@ -10,11 +17,14 @@ class AdminDashboardService {
         this.addDoctorBtn = document.getElementById('addDoctorBtn');
         this.modal = document.getElementById('addDoctorModal');
         this.addDoctorForm = document.getElementById('addDoctorForm');
-        this.modalTitle = this.modal.querySelector('h2');
-        this.submitButton = this.addDoctorForm.querySelector('button[type="submit"]');
+        this.modalTitle = this.modal?.querySelector('h2');
+        this.submitButton = this.addDoctorForm?.querySelector('button[type="submit"]');
         
-        this.initializeEventListeners();
-        this.loadDoctors();
+        // Only initialize if we're on the admin dashboard
+        if (window.location.pathname.includes('/admin/dashboard')) {
+            this.initializeEventListeners();
+            this.loadDoctors();
+        }
     }
 
     initializeEventListeners() {
@@ -42,28 +52,23 @@ class AdminDashboardService {
     async loadDoctors(specialty = '') {
         try {
             this.showLoading();
-            let url = '/api/admin/dashboard';
+            let url = '/admin/dashboard';
             if (specialty && specialty !== 'all') {
                 url += `?specialty=${encodeURIComponent(specialty)}`;
             }
 
-            const response = await fetch(url, {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch doctors');
-            }
-
-            const data = await response.json();
+            const data = await apiService.get(url);
             this.doctors = data.doctors || [];
             this.renderDoctors(); // Initial render after fetch
             this.filterDoctors(); // Apply other filters like search
         } catch (error) {
             console.error('Error loading doctors:', error);
-            this.showError('Failed to load doctors. Please try again later.');
+            this.showError(error.message || 'Failed to load doctors. Please try again later.');
+            
+            // If unauthorized, redirect to login
+            if (error.message.includes('401')) {
+                window.location.href = '/';
+            }
         } finally {
             this.hideLoading();
         }
@@ -185,27 +190,28 @@ class AdminDashboardService {
         const method = isEditing ? 'PUT' : 'POST';
 
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(doctorData)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || `Failed to ${isEditing ? 'update' : 'add'} doctor`);
+            if (this.editingDoctorId) {
+                // Update existing doctor
+                await apiService.put(`/admin/doctors/${this.editingDoctorId}`, doctorData);
+            } else {
+                // Add new doctor
+                await apiService.post('/admin/doctors', doctorData);
             }
             
-            this.showSuccess(`Doctor ${isEditing ? 'updated' : 'added'} successfully!`);
             this.closeModal();
-            await this.loadDoctors();
-
+            this.loadDoctors(this.specialtyFilter.value);
+            this.showSuccess(`Doctor ${this.editingDoctorId ? 'updated' : 'added'} successfully!`);
+            
         } catch (error) {
-            console.error(`Error ${isEditing ? 'adding/updating' : 'adding'} doctor:`, error);
-            this.showError(error.message);
+            console.error('Error saving doctor:', error);
+            this.showError(error.message || 'Failed to save doctor. Please try again.');
+            
+            // If unauthorized, redirect to login
+            if (error.message.includes('401')) {
+                window.location.href = '/';
+            }
+        } finally {
+            this.hideLoading();
         }
     }
 

@@ -1,4 +1,5 @@
 import { openModal } from '../components/modals.js';
+import { authService } from './authService.js';
 
 class LoginHandler {
     constructor() {
@@ -19,60 +20,60 @@ class LoginHandler {
     }
 
     handleRoleSelection(role) {
-        console.log('Role selected:', role); // Debug log
+        console.log('Role selected:', role);
         openModal(`${role}Login`);
     }
 
     async handleLoginSubmit(event) {
         const { type, data } = event.detail;
-        console.log('Login attempt:', type, data); // Debug log
+        console.log('Login attempt:', type, data);
         
         try {
-            // Add your login logic here
-            let endpoint;
-            switch (type) {
-                case 'adminLogin':
-                    endpoint = '/api/admin/login';
-                    break;
-                case 'doctorLogin':
-                    endpoint = '/api/doctors/login';
-                    break;
-                case 'patientLogin':
-                    endpoint = '/api/patients/login';
-                    break;
-                default:
-                    console.error('Unknown login type:', type);
-                    return; // Stop execution if login type is invalid
-            }
-            const response = await fetch(endpoint, {
+            // Map the login type to the expected username field
+            const loginData = {
+                username: data.email || data.username, // Handle both email and username
+                password: data.password
+            };
+
+            const response = await fetch('/api/auth/signin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(loginData)
             });
 
             if (!response.ok) {
-                throw new Error('Login failed');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Login failed');
             }
 
             const result = await response.json();
-            const role = type.replace('Login', '');
-            localStorage.setItem('userRole', role);
-            localStorage.setItem('userEmail', data.email);
-
-            if (role === 'patient' && result.patient) {
-                console.log('Storing patient ID:', result.patient.id); // Debug log
-                localStorage.setItem('patientId', result.patient.id);
-            }
             
-            // Redirect based on role
-            const redirectUrl = `${window.location.origin}/${role}/dashboard`;
-            console.log('Redirecting to:', redirectUrl); // Debug log
-            window.location.replace(redirectUrl);
+            // Store the JWT token and user info
+            if (result.token) {
+                const user = {
+                    username: result.username,
+                    roles: result.roles || []
+                };
+                
+                authService.setAuth(result.token, user);
+                
+                // Determine the role from the first role in the array
+                const role = result.roles && result.roles.length > 0 
+                    ? result.roles[0].replace('ROLE_', '').toLowerCase()
+                    : 'user';
+                
+                // Redirect based on role
+                const redirectUrl = `${window.location.origin}/${role}/dashboard`;
+                console.log('Login successful, redirecting to:', redirectUrl);
+                window.location.replace(redirectUrl);
+            } else {
+                throw new Error('No token received');
+            }
         } catch (error) {
-            console.error('Login failed:', error);
-            alert('Login failed. Please try again.');
+            console.error('Login error:', error);
+            alert(error.message || 'Login failed. Please check your credentials and try again.');
         }
     }
 }
@@ -80,5 +81,5 @@ class LoginHandler {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new LoginHandler();
-    console.log('Login handler initialized'); // Debug log
+    console.log('Login handler initialized');
 });

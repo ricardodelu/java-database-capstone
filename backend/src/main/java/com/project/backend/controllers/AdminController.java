@@ -2,6 +2,7 @@ package com.project.backend.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import java.util.Map;
@@ -15,7 +16,9 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "${app.cors.allowed-origins}", 
+             allowedHeaders = "*", 
+             allowCredentials = "true")
 public class AdminController {
 
     @Autowired
@@ -24,32 +27,10 @@ public class AdminController {
     @Autowired
     private DoctorRepo doctorRepository;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        try {
-            String username = credentials.get("username");
-            String password = credentials.get("password");
-            
-            System.out.println("Admin login attempt - Username: " + username); // Debug log
-
-            if (username == null || password == null) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Username and password are required"
-                ));
-            }
-
-            ResponseEntity<?> result = appService.validateAdmin(credentials);
-            System.out.println("Admin login result: " + result.getStatusCode()); // Debug log
-            return result;
-
-        } catch (Exception e) {
-            System.out.println("Admin login error: " + e.getMessage()); // Debug log
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Login failed: " + e.getMessage()));
-        }
-    }
+    // Login is now handled by AuthController at /api/auth/signin
 
     @GetMapping("/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> dashboard(@RequestParam(required = false) String specialty) {
         try {
             System.out.println("=== Admin dashboard endpoint called with specialty: " + specialty + " ===");
@@ -65,6 +46,7 @@ public class AdminController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getStatistics() {
         try {
             return ResponseEntity.ok(appService.getDoctors());
@@ -75,6 +57,7 @@ public class AdminController {
     }
 
     @GetMapping("/doctors")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllDoctors() {
         try {
             return ResponseEntity.ok(appService.getAllDoctors());
@@ -85,6 +68,7 @@ public class AdminController {
     }
 
     @PostMapping("/doctors")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createDoctor(@Valid @RequestBody DoctorDTO doctorDTO) {
         try {
             return ResponseEntity.ok(appService.createDoctor(doctorDTO));
@@ -95,6 +79,7 @@ public class AdminController {
     }
 
     @PutMapping("/doctors/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateDoctor(
             @PathVariable Long id,
             @Valid @RequestBody DoctorDTO doctorDTO) {
@@ -107,6 +92,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/doctors/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteDoctor(@PathVariable Long id) {
         try {
             appService.deleteDoctor(id);
@@ -118,6 +104,7 @@ public class AdminController {
     }
 
     @GetMapping("/patients")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllPatients() {
         try {
             return ResponseEntity.ok(appService.getAllPatients());
@@ -128,6 +115,7 @@ public class AdminController {
     }
 
     @GetMapping("/appointments")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllAppointments(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String date) {
@@ -140,6 +128,7 @@ public class AdminController {
     }
 
     @GetMapping("/prescriptions")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllPrescriptions(
             @RequestParam(required = false) String doctorId,
             @RequestParam(required = false) String patientId) {
