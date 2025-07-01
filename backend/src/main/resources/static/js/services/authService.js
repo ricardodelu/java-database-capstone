@@ -7,27 +7,99 @@ class AuthService {
 
     // Store the JWT token and user info in localStorage
     setAuth(token, user) {
-        console.log('Setting auth token and user:', { token, user });
-        if (token && user) {
-            try {
-                localStorage.setItem(this.tokenKey, token);
-                localStorage.setItem(this.userKey, JSON.stringify(user));
-                console.log('Auth data stored successfully');
-                return true;
-            } catch (error) {
-                console.error('Error storing auth data:', error);
-                return false;
-            }
+        console.log('setAuth called with:', { 
+            token: token ? `token (${token.length} chars)` : 'no token',
+            tokenPrefix: token ? token.substring(0, 10) + '...' : 'n/a',
+            user: user ? {
+                username: user.username,
+                roles: user.roles
+            } : 'no user'
+        });
+        
+        if (!token || !user) {
+            console.warn('Cannot set auth: missing', { 
+                missingToken: !token, 
+                missingUser: !user 
+            });
+            return false;
         }
-        console.warn('Cannot set auth: missing token or user');
-        return false;
+        
+        try {
+            // Verify localStorage is available
+            if (typeof localStorage === 'undefined') {
+                throw new Error('localStorage is not available');
+            }
+            
+            // Store the token
+            console.log('Storing token in localStorage with key:', this.tokenKey);
+            localStorage.setItem(this.tokenKey, token);
+            
+            // Verify the token was stored
+            const storedToken = localStorage.getItem(this.tokenKey);
+            if (storedToken !== token) {
+                throw new Error('Token storage verification failed');
+            }
+            
+            // Store the user data
+            console.log('Storing user data in localStorage with key:', this.userKey);
+            const userString = JSON.stringify(user);
+            localStorage.setItem(this.userKey, userString);
+            
+            // Verify the user data was stored
+            const storedUser = localStorage.getItem(this.userKey);
+            if (storedUser !== userString) {
+                throw new Error('User data storage verification failed');
+            }
+            
+            // Update the current user
+            this.currentUser = user;
+            
+            console.log('Auth data stored and verified successfully');
+            return true;
+            
+        } catch (error) {
+            console.error('Error in setAuth:', error);
+            // Clear any partial data that might have been stored
+            try {
+                localStorage.removeItem(this.tokenKey);
+                localStorage.removeItem(this.userKey);
+            } catch (e) {
+                console.error('Error cleaning up after failed auth storage:', e);
+            }
+            return false;
+        }
     }
 
     // Get the stored JWT token
     getToken() {
-        const token = localStorage.getItem(this.tokenKey);
-        console.log('Retrieved token from storage:', token ? 'Token exists' : 'No token found');
-        return token;
+        try {
+            if (typeof localStorage === 'undefined') {
+                console.error('localStorage is not available');
+                return null;
+            }
+            
+            const token = localStorage.getItem(this.tokenKey);
+            console.log('Retrieved token from localStorage with key:', this.tokenKey);
+            console.log('Token exists:', !!token);
+            
+            if (!token) {
+                console.warn('No token found in localStorage');
+                return null;
+            }
+            
+            // Verify the token format (basic check for JWT format)
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3) {
+                console.error('Invalid token format');
+                return null;
+            }
+            
+            return token;
+            
+        } catch (error) {
+            console.error('Error retrieving token from localStorage:', error);
+            return null;
+        }
     }
 
     // Get the stored user info
