@@ -165,10 +165,7 @@ class LoginHandler {
                         window.location.href = '/';
                 }
             }, 100);
-        } else {
-            throw new Error('No token received');
-        }
-    } catch (error) {
+        } catch (error) {
             console.error('Login error:', error);
             
             // Log detailed error information
@@ -186,7 +183,7 @@ class LoginHandler {
                 // Something happened in setting up the request that triggered an Error
                 console.error('Request setup error:', error.message);
             }
-            
+        
             // Show error message to user in all relevant places
             let errorMessage = error.message || 'Login failed. Please try again.';
             
@@ -288,7 +285,6 @@ class LoginHandler {
             document.dispatchEvent(errorEvent);
         }
     }
-}
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
