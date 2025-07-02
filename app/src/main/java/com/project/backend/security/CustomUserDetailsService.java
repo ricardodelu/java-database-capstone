@@ -18,6 +18,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -38,57 +40,137 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        logger.info("Attempting to load user by username: {}", username);
+        logger.info("=== CUSTOM USER DETAILS SERVICE ===");
+        logger.info("Attempting to load user by username/email: {}", username);
         
         if (username == null || username.trim().isEmpty()) {
-            logger.error("Username is null or empty");
-            throw new UsernameNotFoundException("Username cannot be empty");
+            String errorMsg = "Username/email is null or empty";
+            logger.error(errorMsg);
+            throw new UsernameNotFoundException(errorMsg);
         }
         
+        logger.debug("Available repositories: AdminRepo={}, DoctorRepo={}, PatientRepo={}", 
+            adminRepository != null ? "initialized" : "null",
+            doctorRepository != null ? "initialized" : "null",
+            patientRepository != null ? "initialized" : "null");
+            
         try {
-            // Try to find user in each repository
-            // Try to find admin by username
-            logger.debug("Searching for admin with username: {}", username);
-            Optional<Admin> admin = adminRepository.findByUsername(username);
-            if (admin.isPresent()) {
-                logger.info("Found admin user: {}", username);
-                logger.debug("Admin user details - Username: {}, Password: [PROTECTED]", 
-                    admin.get().getUsername());
-                return buildUserDetails(admin.get().getUsername(), admin.get().getPassword(), "ROLE_ADMIN");
+            // Try to find admin by username first
+            logger.debug("Attempting to find admin with username: {}", username);
+            Optional<Admin> adminOpt = adminRepository.findByUsername(username);
+            if (adminOpt.isPresent()) {
+                Admin admin = adminOpt.get();
+                logger.info("ADMIN FOUND - ID: {}, Username: {}", 
+                    admin.getId(), admin.getUsername());
+                
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                // Hardcode admin role since it's not stored in the entity
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                
+                logger.debug("Admin authorities: {}", authorities);
+                logger.debug("Creating UserDetails for admin: {}", admin.getUsername());
+                    
+                try {
+                    UserDetails userDetails = new User(
+                        admin.getUsername(), 
+                        admin.getPassword(), 
+                        authorities);
+                    logger.debug("Successfully created UserDetails for admin: {}", admin.getUsername());
+                    return userDetails;
+                } catch (Exception e) {
+                    logger.error("Error creating UserDetails for admin: {}", admin.getUsername(), e);
+                    throw new RuntimeException("Error creating UserDetails for admin: " + e.getMessage(), e);
+                }
             } else {
                 logger.debug("No admin found with username: {}", username);
             }
 
-            // Try to find doctor by email
-            logger.debug("Searching for doctor with email: {}", username);
-            Optional<Doctor> doctor = doctorRepository.findByEmail(username);
-            if (doctor.isPresent()) {
-                logger.info("Found doctor user: {}", username);
-                logger.debug("Doctor user details - Email: {}, Password: [PROTECTED]", 
-                    doctor.get().getEmail());
-                return buildUserDetails(doctor.get().getEmail(), doctor.get().getPassword(), "ROLE_DOCTOR");
+            // Try to find doctor by email (since Doctor entity uses email for login)
+            logger.debug("No admin found, attempting to find doctor with email: {}", username);
+            Optional<Doctor> doctorOpt = doctorRepository.findByEmail(username);
+            if (doctorOpt.isPresent()) {
+                Doctor doctor = doctorOpt.get();
+                logger.info("DOCTOR FOUND - ID: {}, Name: {}, Email: {}", 
+                    doctor.getId(), doctor.getName(), doctor.getEmail());
+                
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                // Hardcode doctor role since it's not stored in the entity
+                authorities.add(new SimpleGrantedAuthority("ROLE_DOCTOR"));
+                
+                logger.debug("Doctor authorities: {}", authorities);
+                logger.debug("Creating UserDetails for doctor: {}", doctor.getEmail());
+                
+                try {
+                    UserDetails userDetails = new User(
+                        doctor.getEmail(), 
+                        doctor.getPassword(), 
+                        authorities);
+                    logger.debug("Successfully created UserDetails for doctor: {}", doctor.getEmail());
+                    return userDetails;
+                } catch (Exception e) {
+                    logger.error("Error creating UserDetails for doctor: {}", doctor.getEmail(), e);
+                    throw new RuntimeException("Error creating UserDetails for doctor: " + e.getMessage(), e);
+                }
             } else {
-                logger.debug("No doctor found with email: {}", username);
+                logger.debug("No doctor found with username: {}", username);
             }
 
             // Try to find patient by email
-            logger.debug("Searching for patient with email: {}", username);
-            Optional<Patient> patient = patientRepository.findByEmail(username);
-            if (patient.isPresent()) {
-                logger.info("Found patient user: {}", username);
-                logger.debug("Patient user details - Email: {}, Password: [PROTECTED]", 
-                    patient.get().getEmail());
-                return buildUserDetails(patient.get().getEmail(), patient.get().getPassword(), "ROLE_PATIENT");
+            // Try to find patient by email
+            logger.debug("No doctor found, attempting to find patient with email: {}", username);
+            Optional<Patient> patientOpt = patientRepository.findByEmail(username);
+            if (patientOpt.isPresent()) {
+                Patient patient = patientOpt.get();
+                logger.info("PATIENT FOUND - ID: {}, Name: {}, Email: {}", 
+                    patient.getId(), patient.getName(), patient.getEmail());
+                
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                // Hardcode patient role since it's not stored in the entity
+                authorities.add(new SimpleGrantedAuthority("ROLE_PATIENT"));
+                
+                logger.debug("Patient authorities: {}", authorities);
+                logger.debug("Creating UserDetails for patient: {}", patient.getEmail());
+                
+                try {
+                    UserDetails userDetails = new User(
+                        patient.getEmail(), 
+                        patient.getPassword(), 
+                        authorities);
+                    logger.debug("Successfully created UserDetails for patient: {}", patient.getEmail());
+                    return userDetails;
+                } catch (Exception e) {
+                    logger.error("Error creating UserDetails for patient: {}", patient.getEmail(), e);
+                    throw new RuntimeException("Error creating UserDetails for patient: " + e.getMessage(), e);
+                }
             } else {
                 logger.debug("No patient found with email: {}", username);
             }
 
-            String errorMsg = "User not found with username or email: " + username;
-            logger.error(errorMsg);
-            throw new UsernameNotFoundException(errorMsg);
+            String errorMsg = "User not found with username/email: " + username;
+            logger.error("USER NOT FOUND - No user found with username/email: {}", username);
+            logger.debug("Searched in: Admins (by username), Doctors (by email), Patients (by email)");
+            throw new UsernameNotFoundException("User not found with username/email: " + username);
+            
         } catch (Exception e) {
-            logger.error("Error loading user by username: " + username, e);
-            throw e;
+            String errorMsg = String.format("ERROR loading user by username/email '%s': %s - %s", 
+                username, e.getClass().getSimpleName(), e.getMessage());
+                
+            logger.error(errorMsg, e);
+            
+            // Log the full stack trace for debugging
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            logger.error("Full stack trace: {}", sw.toString());
+            
+            if (e.getCause() != null) {
+                logger.error("Root cause: {} - {}", 
+                    e.getCause().getClass().getSimpleName(), 
+                    e.getCause().getMessage());
+            }
+            
+            throw new UsernameNotFoundException("Error loading user by username/email: " + username, e);
+        } finally {
+            logger.info("=== END USER LOOKUP FOR: {} ===", username);
         }
     }
 

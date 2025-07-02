@@ -19,7 +19,7 @@ function renderFooter() {
                 <!-- Branding Section -->
                 <div class="footer-brand">
                     <div class="footer-logo">
-                        <img src="/assets/images/logo.png" alt="ClinicMS Logo" class="logo" />
+                        <img src="/assets/images/logo/logo.png" alt="ClinicMS Logo" class="logo" />
                         <h2>ClinicMS</h2>
                     </div>
                     <p class="copyright">© ${currentYear} Clinic Management System. All rights reserved.</p>

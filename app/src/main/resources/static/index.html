@@ -51,11 +51,21 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/js/util.js" defer></script>
-    <script src="/js/render.js" defer></script>
-    <script src="/js/components/header.js" defer></script>
-    <script src="/js/components/footer.js" defer></script>
-    <script type="module" src="/js/services/index.js" defer></script>
-    <script type="module" src="/js/main.js" defer></script>
+    <script type="module" src="/js/util.js"></script>
+    <script type="module" src="/js/render.js"></script>
+    <script type="module" src="/js/components/header.js"></script>
+    <script type="module" src="/js/components/footer.js"></script>
+    <script type="module" src="/js/services/index.js"></script>
+    <script type="module" src="/js/main.js"></script>
+    <script>
+    // Global function for role selection
+    function selectRole(role) {
+        if (window.app && typeof window.app.handleRoleSelection === 'function') {
+            window.app.handleRoleSelection(role);
+        } else {
+            console.error('App not initialized or handleRoleSelection not found');
+        }
+    }
+    </script>
 </body>
 </html>

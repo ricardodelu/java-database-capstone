@@ -16,9 +16,14 @@ import java.util.stream.Collectors;
 @Controller
 public class DashboardController {
 
+    @GetMapping("/")
+    public String index() {
+        return "forward:/index.html";
+    }
+    
     @GetMapping("/login")
     public String login() {
-        return "index";
+        return "forward:/index.html";
     }
 
     @Autowired
@@ -56,8 +61,5 @@ public class DashboardController {
         return "patient/patientDashboard";
     }
 
-    @GetMapping("/")
-    public String home() {
-        return "index";
-    }
+
 }

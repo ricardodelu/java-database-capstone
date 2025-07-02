@@ -61,6 +61,7 @@ public class SecurityConfig {
                 // Public access to login page and static resources
                 .requestMatchers(
                     "/",
+                    "/index.html",
                     "/login",
                     "/login.html",
                     "/static/**",
@@ -68,7 +69,16 @@ public class SecurityConfig {
                     "/css/**",
                     "/js/**",
                     "/images/**",
-                    "/favicon.ico"
+                    "/favicon.ico",
+                    "/**/*.js",
+                    "/**/*.css",
+                    "/**/*.png",
+                    "/**/*.jpg",
+                    "/**/*.jpeg",
+                    "/**/*.gif",
+                    "/**/*.svg",
+                    "/**/*.ico",
+                    "/**/*.html"
                 ).permitAll()
                 // Public access to authentication endpoints
                 .requestMatchers("/api/auth/**").permitAll()
