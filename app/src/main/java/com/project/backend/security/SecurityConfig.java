@@ -90,9 +90,9 @@ public class SecurityConfig {
                     "/webjars/**"
                 ).permitAll()
                 // Role-based access control for dashboards
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/doctor/**").hasRole("DOCTOR")
-                .requestMatchers("/patient/**").hasRole("PATIENT")
+                .requestMatchers("/admin/dashboard").hasRole("ADMIN")
+                .requestMatchers("/doctor/dashboard").hasRole("DOCTOR")
+                .requestMatchers("/patient/dashboard").hasRole("PATIENT")
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )
