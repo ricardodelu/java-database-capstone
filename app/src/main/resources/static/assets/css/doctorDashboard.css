@@ -11,15 +11,12 @@
     --secondary-color: #f8f9fa;
     --text-color: #333;
     --border-color: #ddd;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
     --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 html, body {
     height: 100%;
-    font-family: 'Roboto', sans-serif;
+    font-family: Arial, sans-serif;
     color: var(--text-color);
     background-color: #f5f5f5;
 }
@@ -49,145 +46,135 @@ html, body {
     margin-top: 20px;
 }
 
-/* Search and Filter Section */
-.search-filter-section {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    align-items: center;
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-}
-
+/* Search Bar */
 .search-container {
-    flex: 1;
-    min-width: 300px;
-    display: flex;
-    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
 }
 
-#searchBar {
-    flex: 1;
-    padding: 10px 15px;
+.search-input {
+    width: 100%;
+    padding: 12px 15px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.search-btn {
-    padding: 10px 15px;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(1, 92, 93, 0.2);
 }
 
-.search-btn:hover {
-    background: var(--primary-hover);
-}
-
-.filter-container {
+/* Filter Section */
+.filter-section {
     display: flex;
-    gap: 10px;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 }
 
 .filter-btn {
-    padding: 10px 15px;
-    background: var(--secondary-color);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.filter-btn.active {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-
-.date-input, .filter-select {
-    padding: 10px 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-/* Patient Records Section */
-.patient-records-section {
-    background: white;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.section-header h2 {
-    font-size: 1.5rem;
-    color: var(--primary-color);
-}
-
-.action-btn {
-    padding: 8px 15px;
+    padding: 10px 20px;
     background: var(--primary-color);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: background-color 0.2s;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
-.action-btn:hover {
+.filter-btn:hover {
     background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.filter-btn.active {
+    background: var(--primary-hover);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.date-input {
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(1, 92, 93, 0.2);
 }
 
 /* Table Styles */
 .table-container {
-    overflow-x: auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    width: 100%;
 }
 
-#patientTable {
+.patient-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
 }
 
-#patientTable th {
-    background: var(--primary-color);
+.patient-table th {
+    background-color: rgba(1, 92, 93, 0.9);
     color: white;
-    padding: 12px 15px;
+    padding: 15px;
     text-align: left;
+    font-weight: 500;
 }
 
-#patientTable td {
-    padding: 12px 15px;
-    border-bottom: 1px solid var(--border-color);
+.patient-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
 }
 
-#patientTable tbody tr:hover {
-    background-color: #f8f9fa;
+.patient-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
 }
 
+.patient-table tbody tr:hover {
+    background-color: #f0f0f0;
+}
+
+/* Prescription Button */
+.prescription-btn {
+    padding: 6px 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.prescription-btn:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+/* No Records Message */
 .no-records {
-    padding: 20px;
+    padding: 30px;
     text-align: center;
     color: #666;
     font-style: italic;
+    background: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
 }
 
 /* Modal Styles */
