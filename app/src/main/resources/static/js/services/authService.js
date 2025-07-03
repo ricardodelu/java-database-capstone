@@ -126,32 +126,96 @@ class AuthService {
 
     // Check if user is authenticated
     isAuthenticated() {
-        return !!this.getToken();
+        console.group('🔐 isAuthenticated');
+        try {
+            const token = this.getToken();
+            const hasToken = !!token;
+            const user = this.getUser();
+            
+            console.log('🔍 Authentication check:', {
+                hasToken,
+                tokenLength: token ? token.length : 0,
+                hasUser: !!user,
+                userRoles: user?.roles || []
+            });
+            
+            if (!hasToken) {
+                console.warn('❌ No authentication token found');
+                return false;
+            }
+            
+            if (!user) {
+                console.warn('❌ No user data found in storage');
+                return false;
+            }
+            
+            console.log('✅ User is authenticated');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error in isAuthenticated:', error);
+            return false;
+        } finally {
+            console.groupEnd();
+        }
     }
 
     // Check if user has a specific role
     hasRole(role) {
-        const user = this.getUser();
-        if (!user || !user.roles) {
-            console.warn('No user or roles found');
+        console.group('🔐 Role Check');
+        try {
+            const user = this.getUser();
+            console.log('👤 User from storage:', user);
+            
+            if (!user) {
+                console.warn('❌ No user found in storage');
+                return false;
+            }
+            
+            if (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0) {
+                console.warn('⚠️ No roles found for user or roles is not an array:', user.roles);
+                return false;
+            }
+            
+            // Normalize the role to check for
+            const normalizedRole = (role || '').toUpperCase().trim();
+            const roleWithPrefix = normalizedRole.startsWith('ROLE_') ? normalizedRole : `ROLE_${normalizedRole}`;
+            const roleWithoutPrefix = normalizedRole.startsWith('ROLE_') ? normalizedRole.substring(5) : normalizedRole;
+            
+            console.log('🔍 Role check details:', {
+                requestedRole: role,
+                normalizedRole,
+                roleWithPrefix,
+                roleWithoutPrefix,
+                userRoles: user.roles
+            });
+            
+            // Check if any of the user's roles match (case-insensitive and with/without prefix)
+            const hasRole = user.roles.some(userRole => {
+                if (!userRole) return false;
+                
+                const normalizedUserRole = userRole.toUpperCase().trim();
+                const match = 
+                    normalizedUserRole === normalizedRole || 
+                    normalizedUserRole === roleWithPrefix ||
+                    normalizedUserRole === roleWithoutPrefix ||
+                    normalizedUserRole.replace('ROLE_', '') === normalizedRole ||
+                    normalizedUserRole === normalizedRole.replace('ROLE_', '') ||
+                    normalizedUserRole === roleWithPrefix.replace('ROLE_', '');
+                
+                console.log(`  - Checking "${normalizedUserRole}" against "${normalizedRole}" -> ${match ? '✅' : '❌'}`);
+                return match;
+            });
+            
+            console.log(`🎯 Final role check - Required: "${role}", Has role: ${hasRole ? '✅' : '❌'}`);
+            return hasRole;
+            
+        } catch (error) {
+            console.error('❌ Error in hasRole:', error);
             return false;
+        } finally {
+            console.groupEnd();
         }
-        
-        // Normalize the role to check for
-        const normalizedRole = role.toUpperCase();
-        const roleWithPrefix = normalizedRole.startsWith('ROLE_') ? normalizedRole : `ROLE_${normalizedRole}`;
-        
-        // Check if any of the user's roles match (case-insensitive and with/without prefix)
-        const hasRole = user.roles.some(userRole => {
-            const normalizedUserRole = userRole.toUpperCase();
-            return normalizedUserRole === normalizedRole || 
-                   normalizedUserRole === roleWithPrefix ||
-                   normalizedUserRole === normalizedRole.replace('ROLE_', '') ||
-                   normalizedUserRole === roleWithPrefix.replace('ROLE_', '');
-        });
-        
-        console.log(`Role check - Required: ${role}, User roles: ${JSON.stringify(user.roles)}, Has role: ${hasRole}`);
-        return hasRole;
     }
 
     // Clear auth data (logout)

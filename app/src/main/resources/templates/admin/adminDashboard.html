@@ -4,37 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    
-    <!-- CSS -->
-    <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}">
-    <link rel="stylesheet" th:href="@{/assets/css/style.css}">
-    
-    <!-- JavaScript -->
-    <script th:src="@{/js/render.js}" defer></script>
-    <script th:src="@{/js/util.js}" defer></script>
-    <script th:src="@{/js/components/header.js}" defer></script>
-    <script th:src="@{/js/components/footer.js}" defer></script>
+    <base href="/">
+    <link rel="stylesheet" href="/assets/css/adminDashboard.css" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Critical styles that must be inlined */
+        body {
+            background-image: url('/assets/images/hospital-background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            min-height: 100vh;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="wrapper">
             <!-- Header -->
-            <div id="header"></div>
+            <header id="header" class="dashboard-header">
+                <h1>Admin Dashboard</h1>
+                <button id="addDoctorBtn" class="adminBtn">
+                    <i class="fas fa-plus"></i> Add New Doctor
+                </button>
+            </header>
             
             <main class="main-content">
-                <!-- Search Bar -->
+                <!-- Search and Filter Section -->
                 <div class="search-container">
-                    <input type="text" id="searchBar" placeholder="Search by doctor name" class="search-input" />
+                    <input type="text" id="searchBar" placeholder="Search by doctor name" class="search-input">
                 </div>
                 
-                <!-- Filter Section -->
                 <div class="filter-section">
-                    <select id="timeFilter" class="filter-select">
-                        <option value="">Sort by Time</option>
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                    </select>
-                    
                     <select id="specialtyFilter" class="filter-select">
                         <option value="">All Specialties</option>
                         <option value="cardiology">Cardiology</option>
@@ -43,35 +55,75 @@
                         <option value="orthopedics">Orthopedics</option>
                         <option value="dermatology">Dermatology</option>
                     </select>
+                    
+                    <select id="timeFilter" class="filter-select">
+                        <option value="">Sort by Time</option>
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
                 </div>
                 
-                <!-- Content Area -->
+                <!-- Doctor List Container -->
                 <div id="content" class="content-area">
-                    <!-- Doctor cards will be dynamically inserted here -->
+                    <div id="doctorList" class="doctor-grid">
+                        <!-- Doctor cards will be loaded here by JavaScript -->
+                        <div class="loading">
+                            <p>Loading doctors...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error Message Container -->
+                <div id="errorContainer" class="error-message" style="display: none;">
+                    <p>Error loading doctors. Please try again later.</p>
                 </div>
             </main>
             
             <!-- Footer -->
-            <div id="footer"></div>
-
+            <footer id="footer">
+                <p>&copy; 2025 Clinic Management System</p>
+            </footer>
         </div>
     </div>
 
-    <!-- Modal -->
-    <div id="modal" class="modal">
+    <!-- Add Doctor Modal -->
+    <div id="addDoctorModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span id="closeModal" class="close">&times;</span>
-            <div id="modal-body">
-                <!-- Modal content will be dynamically inserted here -->
-            </div>
+            <span class="close">&times;</span>
+            <h2>Add New Doctor</h2>
+            <form id="addDoctorForm">
+                <div class="form-group">
+                    <label for="doctorName">Full Name</label>
+                    <input type="text" id="doctorName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctorSpecialty">Specialty</label>
+                    <select id="doctorSpecialty" name="specialty" required>
+                        <option value="">Select a specialty</option>
+                        <option value="cardiology">Cardiology</option>
+                        <option value="neurology">Neurology</option>
+                        <option value="pediatrics">Pediatrics</option>
+                        <option value="orthopedics">Orthopedics</option>
+                        <option value="dermatology">Dermatology</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="doctorEmail">Email</label>
+                    <input type="email" id="doctorEmail" name="email" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Doctor</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Service Scripts -->
-    <script type="module" th:src="@{/js/services/adminDashboard.js}" defer></script>
-    <script type="module" th:src="@{/js/components/doctorCard.js}" defer></script>
+    <script type="module" th:src="@{/js/adminDashboard.js}" defer></script>
     
     <!-- Font Awesome for icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous" defer></script>
 </body>
 </html>

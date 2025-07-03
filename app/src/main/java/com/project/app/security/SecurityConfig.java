@@ -69,6 +69,13 @@ public class SecurityConfig {
                     "/api/auth/**"
                 ).permitAll()
                 
+                // Admin dashboard access - requires authentication
+                .requestMatchers(
+                    "/admin",
+                    "/admin/",
+                    "/admin/dashboard"
+                ).hasRole("ADMIN")
+                
                 // Static resources - directory based
                 .requestMatchers(
                     "/js/**",
@@ -99,8 +106,7 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/webjars/**"
                 ).permitAll()
-                // Role-based access control for dashboards
-                .requestMatchers("/admin/dashboard").hasRole("ADMIN")
+                // Role-based access control for dashboards (consolidated with above)
                 .requestMatchers("/doctor/dashboard").hasRole("DOCTOR")
                 .requestMatchers("/patient/dashboard").hasRole("PATIENT")
                 // All other requests require authentication

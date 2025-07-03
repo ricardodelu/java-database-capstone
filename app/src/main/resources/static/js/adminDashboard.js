@@ -3,27 +3,68 @@ import { apiService } from '/js/services/apiService.js';
 // Admin Dashboard Service
 class AdminDashboardService {
     constructor() {
-        // Check authentication before proceeding
-        if (!apiService.checkAuth('ADMIN')) {
-            return;
+        console.log('AdminDashboardService constructor called');
+        
+        // Store a reference to the instance
+        const self = this;
+        
+        // Initialize when DOM is fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => self.initialize());
+        } else {
+            // DOM already loaded
+            setTimeout(() => self.initialize(), 0);
         }
+    }
+    
+    async initialize() {
+        console.log('Initializing AdminDashboardService');
         
-        this.doctors = [];
-        this.editingDoctorId = null; // For tracking edits
-        this.searchBar = document.getElementById('searchBar');
-        this.specialtyFilter = document.getElementById('specialtyFilter');
-        this.timeFilter = document.getElementById('timeFilter');
-        this.doctorList = document.getElementById('doctorList');
-        this.addDoctorBtn = document.getElementById('addDoctorBtn');
-        this.modal = document.getElementById('addDoctorModal');
-        this.addDoctorForm = document.getElementById('addDoctorForm');
-        this.modalTitle = this.modal?.querySelector('h2');
-        this.submitButton = this.addDoctorForm?.querySelector('button[type="submit"]');
-        
-        // Only initialize if we're on the admin dashboard
-        if (window.location.pathname.includes('/admin/dashboard')) {
+        try {
+            // Check authentication before proceeding
+            if (!apiService.checkAuth('ADMIN')) {
+                console.log('User not authenticated or missing admin role');
+                return;
+            }
+            
+            this.doctors = [];
+            this.editingDoctorId = null; // For tracking edits
+            
+            // Get DOM elements with null checks
+            const elements = {
+                searchBar: document.getElementById('searchBar'),
+                specialtyFilter: document.getElementById('specialtyFilter'),
+                timeFilter: document.getElementById('timeFilter'),
+                doctorList: document.getElementById('doctorList'),
+                addDoctorBtn: document.getElementById('addDoctorBtn'),
+                modal: document.getElementById('addDoctorModal'),
+                addDoctorForm: document.getElementById('addDoctorForm')
+            };
+            
+            // Check for missing elements
+            const missingElements = Object.entries(elements)
+                .filter(([_, el]) => !el)
+                .map(([name]) => name);
+                
+            if (missingElements.length > 0) {
+                throw new Error(`Missing required DOM elements: ${missingElements.join(', ')}`);
+            }
+            
+            // Assign elements to instance
+            Object.assign(this, elements);
+            
+            console.log('All required DOM elements found');
+            
+            // Initialize the dashboard
             this.initializeEventListeners();
-            this.loadDoctors();
+            await this.loadDoctors();
+            
+            // Show the dashboard content
+            document.body.style.display = 'block';
+            
+        } catch (error) {
+            console.error('Error initializing AdminDashboardService:', error);
+            this.showError(`Failed to initialize dashboard: ${error.message}`);
         }
     }
 

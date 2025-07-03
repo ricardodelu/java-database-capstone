@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.security.Principal;
 import java.util.List;
@@ -32,9 +33,15 @@ public class DashboardController {
     @Autowired
     private PatientService patientService;
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String admin() {
+        return "admin/adminDashboard";
+    }
+    
     @GetMapping("/admin/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
     public String adminDashboard() {
-        System.out.println("AdminDashboard endpoint hit - returning admin/adminDashboard"); // Debug log
         return "admin/adminDashboard";
     }
     

@@ -90,12 +90,35 @@ class App {
     async checkAuthState() {
         try {
             const token = authService.getToken();
-            if (token) {
-                // User is logged in, load the appropriate dashboard
-                const user = authService.getCurrentUser();
-                if (user && user.roles && user.roles.length > 0) {
-                    const role = user.roles[0].replace('ROLE_', '').toLowerCase();
-                    await this.loadDashboard(role);
+            const user = authService.getCurrentUser();
+            
+            if (token && user) {
+                console.log('User is authenticated, checking role...');
+                // Update UI based on user role
+                this.updateUIForAuthenticatedUser(user.role || 'patient');
+                
+                // Only load dashboard if we're on a dashboard route
+                const path = window.location.pathname;
+                console.log('Current path:', path);
+                
+                if (path === '/admin/dashboard' && user.roles?.includes('ROLE_ADMIN')) {
+                    console.log('Loading admin dashboard from checkAuthState');
+                    await this.loadDashboard('admin');
+                } else if (path === '/patient/dashboard') {
+                    await this.loadDashboard('patient');
+                } else if (path === '/doctor/dashboard') {
+                    await this.loadDashboard('doctor');
+                } else {
+                    console.log('No dashboard to load for current route:', path);
+                }
+            } else {
+                console.log('No valid authentication found');
+                this.updateUIForUnauthenticatedUser();
+                
+                // If on a dashboard route but not authenticated, redirect to login
+                const path = window.location.pathname;
+                if (path.includes('dashboard')) {
+                    window.location.href = '/';
                 }
             }
         } catch (error) {
@@ -116,12 +139,72 @@ class App {
 
     async loadDashboard(role) {
         console.log('loadDashboard called with role:', role);
-        const contentDiv = document.querySelector('main.main-content');
         
-        if (!contentDiv) {
-            console.error('Main content area (main.main-content) not found in the DOM');
-            console.log('Available elements in body:', document.body.innerHTML);
+        // Get the JWT token
+        const token = authService.getToken();
+        if (!token) {
+            console.error('No JWT token found');
+            window.location.href = '/login';
             return;
+        }
+        
+        // Redirect to the appropriate dashboard based on role
+        const dashboardPath = `/${role}/dashboard`;
+        console.log('Loading dashboard at', dashboardPath, 'for role:', role);
+        
+        // Find the content div
+        const contentDiv = document.querySelector('main.main-content') || document.getElementById('content') || document.body;
+        
+        // Check if we're already on the dashboard page
+        if (window.location.pathname === dashboardPath) {
+            console.log('Already on dashboard page, initializing dashboard...');
+            await this.initializeDashboard(role);
+            return;
+        }
+        
+        // Show loading state
+        if (contentDiv) {
+            contentDiv.innerHTML = '<div class="loading">Loading dashboard...</div>';
+        }
+        
+        // Use fetch to load the dashboard with the JWT token
+        try {
+            const response = await fetch(dashboardPath, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'text/html',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin' // Include cookies if needed
+            });
+            
+            if (response.ok) {
+                // If the response is HTML, replace the current document
+                const html = await response.text();
+                document.open();
+                document.write(html);
+                document.close();
+            } else if (response.status === 401 || response.status === 403) {
+                console.error('Access denied - invalid or expired token');
+                authService.logout();
+                window.location.href = '/login';
+            } else {
+                console.error('Failed to load dashboard:', response.status, response.statusText);
+                window.location.href = '/';
+            }
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            if (contentDiv) {
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h2>Error Loading Dashboard</h2>
+                        <p>${error.message || 'An unknown error occurred'}</p>
+                        <button onclick="window.location.href='/'">Return to Home</button>
+                    </div>
+                `;
+            } else {
+                window.location.href = '/';
+            }
         }
 
         try {
@@ -140,6 +223,12 @@ class App {
                 case 'admin':
                     console.log('Loading admin dashboard');
                     try {
+                        // Only proceed if we're on the admin dashboard page
+                        if (!document.getElementById('doctorList')) {
+                            console.error('Admin dashboard elements not found on this page');
+                            return;
+                        }
+                        
                         const { AdminDashboardService } = await import('/js/adminDashboard.js');
                         console.log('AdminDashboardService imported successfully');
                         new AdminDashboardService();

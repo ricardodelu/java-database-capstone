@@ -15,6 +15,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import io.jsonwebtoken.Claims;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
@@ -43,6 +48,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             
             String jwt = getJwtFromRequest(request);
+            logger.debug("JWT token from request: {}", jwt != null ? "[HIDDEN]" : "null");
+            
+            if (jwt == null) {
+                logger.warn("No JWT token found in request headers");
+            }
             logger.info("JWT token found: {}", jwt != null ? "[HIDDEN]" : "Not found");
             
             if (StringUtils.hasText(jwt)) {
@@ -50,45 +60,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 logger.debug("JWT token prefix: {}", jwt.substring(0, Math.min(10, jwt.length())) + (jwt.length() > 10 ? "..." : ""));
                 
                 try {
-                    if (tokenProvider.validateToken(jwt)) {
-                        logger.debug("JWT token validation succeeded");
-                        String username = tokenProvider.getUsernameFromJWT(jwt);
-                        logger.info("Extracted username from JWT: {}", username);
+                    if (StringUtils.hasText(jwt)) {
+                        logger.debug("JWT token found, validating...");
+                        boolean isValid = tokenProvider.validateToken(jwt);
+                        logger.debug("JWT token validation result: {}", isValid);
                         
-                        // Get authorities from the token
-                        Claims claims = tokenProvider.getClaimsFromToken(jwt);
-                        String authoritiesString = claims.get("auth", String.class);
-                        logger.info("Authorities from token: {}", authoritiesString);
-                        
-                        // Convert authorities string to a list of GrantedAuthority
-                        List<GrantedAuthority> authorities = new ArrayList<>();
-                        if (authoritiesString != null && !authoritiesString.isEmpty()) {
-                            String[] roles = authoritiesString.split(",");
-                            for (String role : roles) {
-                                // Ensure role has the ROLE_ prefix
-                                String roleName = role.trim().startsWith("ROLE_") ? role.trim() : "ROLE_" + role.trim();
-                                authorities.add(new SimpleGrantedAuthority(roleName));
-                                logger.debug("Added authority: {}", roleName);
+                        if (isValid) {
+                            logger.debug("JWT token validation succeeded");
+                            String username = tokenProvider.getUsernameFromJWT(jwt);
+                            logger.info("Extracted username from JWT: {}", username);
+                            
+                            UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                            logger.debug("Loaded user details: {}", userDetails.getUsername());
+                            logger.debug("User authorities: {}", userDetails.getAuthorities());
+                            
+                            // Get authorities from the token
+                            Claims claims = tokenProvider.getClaimsFromToken(jwt);
+                            String authoritiesString = claims.get("auth", String.class);
+                            logger.info("Authorities from token: {}", authoritiesString);
+                            
+                            // Convert authorities string to a list of GrantedAuthority
+                            List<GrantedAuthority> authorities = new ArrayList<>();
+                            if (authoritiesString != null && !authoritiesString.isEmpty()) {
+                                String[] roles = authoritiesString.split(",");
+                                for (String role : roles) {
+                                    // Ensure role has the ROLE_ prefix
+                                    String roleName = role.trim().startsWith("ROLE_") ? role.trim() : "ROLE_" + role.trim();
+                                    authorities.add(new SimpleGrantedAuthority(roleName));
+                                    logger.debug("Added authority: {}", roleName);
+                                }
                             }
+                            // Create authentication token
+                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, authorities);
+                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            
+                            // Set the authentication in the SecurityContext
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                            logger.info("Authenticated user: {}", username);
                         }
-                        
-                        // Create authentication token with the extracted authorities
-                        UsernamePasswordAuthenticationToken authentication = 
-                            new UsernamePasswordAuthenticationToken(
-                                username,
-                                null,
-                                authorities
-                            );
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        logger.info("Successfully set authentication in SecurityContext for user: {}", username);
-                    } else {
-                        logger.warn("JWT token validation failed");
-                        logger.debug("Token validation failed for token: {}", jwt);
                     }
                 } catch (Exception e) {
-                    logger.error("Error during JWT validation: {}", e.getMessage(), e);
+                    logger.error("Could not set user authentication in security context", e);
                     throw e;
                 }
             } else {

@@ -143,22 +143,46 @@ class ApiService {
 
     // Check if user is authenticated and has required role
     checkAuth(requiredRole = null) {
-        if (!authService.isAuthenticated()) {
-            console.warn('User not authenticated, redirecting to login');
-            // Redirect to login if not authenticated
-            window.location.href = '/';
+        console.group('🔐 checkAuth');
+        try {
+            console.log('🔍 Checking authentication status...');
+            const isAuthenticated = authService.isAuthenticated();
+            console.log('🔑 isAuthenticated:', isAuthenticated);
+            
+            if (!isAuthenticated) {
+                console.warn('❌ User not authenticated, redirecting to login');
+                console.log('ℹ️ Token in localStorage:', localStorage.getItem('jwtToken') ? 'Exists' : 'Not found');
+                console.log('ℹ️ User in localStorage:', localStorage.getItem('user') || 'Not found');
+                console.groupEnd();
+                window.location.href = '/';
+                return false;
+            }
+            
+            if (requiredRole) {
+                console.log(`🔍 Checking for required role: ${requiredRole}`);
+                const hasRole = authService.hasRole(requiredRole);
+                console.log(`🔑 hasRole('${requiredRole}'):`, hasRole);
+                
+                if (!hasRole) {
+                    console.warn(`❌ User does not have required role: ${requiredRole}`);
+                    console.log('ℹ️ User roles from storage:', JSON.parse(localStorage.getItem('user') || '{}').roles || 'No roles');
+                    console.groupEnd();
+                    window.location.href = `/?error=unauthorized&requiredRole=${encodeURIComponent(requiredRole)}`;
+                    return false;
+                }
+            } else {
+                console.log('✅ No specific role required, authentication check passed');
+            }
+            
+            console.log('✅ Authentication and role check passed');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error in checkAuth:', error);
             return false;
+        } finally {
+            console.groupEnd();
         }
-        
-        if (requiredRole && !authService.hasRole(requiredRole)) {
-            console.warn(`User does not have required role: ${requiredRole}`);
-            // Instead of redirecting to /unauthorized, redirect to home with an error message
-            // or handle it in a way that makes sense for your application
-            window.location.href = `/?error=unauthorized&requiredRole=${encodeURIComponent(requiredRole)}`;
-            return false;
-        }
-        
-        return true;
     }
 }
 
