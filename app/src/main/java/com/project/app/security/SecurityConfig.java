@@ -76,19 +76,34 @@ public class SecurityConfig {
                     "/admin/dashboard"
                 ).hasRole("ADMIN")
                 
-                // Static resources - directory based
+                // Static resources - allow all static content
                 .requestMatchers(
+                    "/**/*.js",
+                    "/**/*.css",
+                    "/**/*.png",
+                    "/**/*.jpg",
+                    "/**/*.jpeg",
+                    "/**/*.gif",
+                    "/**/*.svg",
+                    "/**/*.ico",
+                    "/**/*.woff",
+                    "/**/*.woff2",
+                    "/**/*.ttf",
+                    "/**/*.eot",
                     "/js/**",
                     "/css/**",
                     "/images/**",
                     "/static/**",
-                    "/assets/**"
+                    "/assets/**",
+                    "/fonts/**"
                 ).permitAll()
                 
                 // Common static files in root
                 .requestMatchers(
                     "/favicon.ico",
-                    "/robots.txt"
+                    "/robots.txt",
+                    "/index.html",
+                    "/"
                 ).permitAll()
                 
                 // Swagger/OpenAPI documentation
