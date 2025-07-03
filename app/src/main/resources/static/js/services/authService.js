@@ -132,7 +132,26 @@ class AuthService {
     // Check if user has a specific role
     hasRole(role) {
         const user = this.getUser();
-        return user && user.roles && user.roles.includes(role);
+        if (!user || !user.roles) {
+            console.warn('No user or roles found');
+            return false;
+        }
+        
+        // Normalize the role to check for
+        const normalizedRole = role.toUpperCase();
+        const roleWithPrefix = normalizedRole.startsWith('ROLE_') ? normalizedRole : `ROLE_${normalizedRole}`;
+        
+        // Check if any of the user's roles match (case-insensitive and with/without prefix)
+        const hasRole = user.roles.some(userRole => {
+            const normalizedUserRole = userRole.toUpperCase();
+            return normalizedUserRole === normalizedRole || 
+                   normalizedUserRole === roleWithPrefix ||
+                   normalizedUserRole === normalizedRole.replace('ROLE_', '') ||
+                   normalizedUserRole === roleWithPrefix.replace('ROLE_', '');
+        });
+        
+        console.log(`Role check - Required: ${role}, User roles: ${JSON.stringify(user.roles)}, Has role: ${hasRole}`);
+        return hasRole;
     }
 
     // Clear auth data (logout)
@@ -162,20 +181,17 @@ class AuthService {
     
     // Check if current user has admin role
     isAdmin() {
-        const user = this.getCurrentUser();
-        return user && user.roles && user.roles.includes('ROLE_ADMIN');
+        return this.hasRole('ADMIN');
     }
     
     // Check if current user has doctor role
     isDoctor() {
-        const user = this.getCurrentUser();
-        return user && user.roles && user.roles.includes('ROLE_DOCTOR');
+        return this.hasRole('DOCTOR');
     }
     
     // Check if current user has patient role
     isPatient() {
-        const user = this.getCurrentUser();
-        return user && user.roles && user.roles.includes('ROLE_PATIENT');
+        return this.hasRole('PATIENT');
     }
 
     // Get auth header for API requests

@@ -55,15 +55,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         String username = tokenProvider.getUsernameFromJWT(jwt);
                         logger.info("Extracted username from JWT: {}", username);
                         
-                        UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-                        logger.info("Loaded user details for: {}, roles: {}", 
-                            username, userDetails.getAuthorities());
+                        // Get authorities from the token
+                        Claims claims = tokenProvider.getClaimsFromToken(jwt);
+                        String authoritiesString = claims.get("auth", String.class);
+                        logger.info("Authorities from token: {}", authoritiesString);
                         
+                        // Convert authorities string to a list of GrantedAuthority
+                        List<GrantedAuthority> authorities = new ArrayList<>();
+                        if (authoritiesString != null && !authoritiesString.isEmpty()) {
+                            String[] roles = authoritiesString.split(",");
+                            for (String role : roles) {
+                                // Ensure role has the ROLE_ prefix
+                                String roleName = role.trim().startsWith("ROLE_") ? role.trim() : "ROLE_" + role.trim();
+                                authorities.add(new SimpleGrantedAuthority(roleName));
+                                logger.debug("Added authority: {}", roleName);
+                            }
+                        }
+                        
+                        // Create authentication token with the extracted authorities
                         UsernamePasswordAuthenticationToken authentication = 
                             new UsernamePasswordAuthenticationToken(
-                                userDetails, 
-                                null, 
-                                userDetails.getAuthorities()
+                                username,
+                                null,
+                                authorities
                             );
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         

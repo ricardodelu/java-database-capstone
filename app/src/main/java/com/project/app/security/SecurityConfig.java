@@ -58,39 +58,38 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // Public access to login page and static resources
-                // Public access to web resources
+                // Public access to web pages and authentication endpoints
                 .requestMatchers(
                     "/",
                     "/index.html",
                     "/login",
                     "/login.html",
+                    "/unauthorized",
+                    "/error",
+                    "/api/auth/**"
+                ).permitAll()
+                
+                // Static resources - directory based
+                .requestMatchers(
                     "/js/**",
                     "/css/**",
                     "/images/**",
                     "/static/**",
-                    "/assets/**",
-                    "/services/**"
+                    "/assets/**"
                 ).permitAll()
                 
-                // Public access to static resources with extensions
+                // Common static files in root
                 .requestMatchers(
-                    "/**/*.js",
-                    "/**/*.css",
-                    "/**/*.png",
-                    "/**/*.jpg",
-                    "/**/*.jpeg",
-                    "/**/*.gif",
-                    "/**/*.svg",
-                    "/**/*.ico",
-                    "/**/*.html",
-                    "/**/*.map"
+                    "/favicon.ico",
+                    "/robots.txt"
                 ).permitAll()
                 
-                // Public access to authentication endpoints
+                // Swagger/OpenAPI documentation
                 .requestMatchers(
-                    "/api/auth/**",
-                    "/api/auth/signin"
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/webjars/**"
                 ).permitAll()
                 
                 // Public access to API documentation and webjars

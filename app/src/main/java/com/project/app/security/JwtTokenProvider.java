@@ -74,12 +74,15 @@ public class JwtTokenProvider {
     }
 
     public String getUsernameFromJWT(String token) {
+        return getClaimsFromToken(token).getSubject();
+    }
+    
+    public Claims getClaimsFromToken(String token) {
         return Jwts.parser()
                 .verifyWith((SecretKey) getSigningKey())
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+                .getPayload();
     }
 
     public boolean validateToken(String authToken) {

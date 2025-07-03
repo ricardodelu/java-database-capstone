@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.Collectors;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -50,14 +51,29 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
         
         logger.debug("Available repositories: AdminRepo={}, DoctorRepo={}, PatientRepo={}", 
-            adminRepository != null ? "initialized" : "null",
-            doctorRepository != null ? "initialized" : "null",
-            patientRepository != null ? "initialized" : "null");
+            adminRepository != null ? adminRepository.getClass().getName() : "null",
+            doctorRepository != null ? doctorRepository.getClass().getName() : "null",
+            patientRepository != null ? patientRepository.getClass().getName() : "null");
             
         try {
             // Try to find admin by username first
             logger.debug("Attempting to find admin with username: {}", username);
+            logger.debug("Admin repository class: {}", adminRepository.getClass().getName());
+            logger.debug("Calling adminRepository.findByUsername('{}')", username);
+            
+            // Log all admin usernames for debugging
+            try {
+                List<Admin> allAdmins = adminRepository.findAll();
+                logger.debug("All admin usernames in database: {}", 
+                    allAdmins.stream().map(Admin::getUsername).collect(Collectors.toList()));
+            } catch (Exception e) {
+                logger.error("Error fetching all admins: {}", e.getMessage(), e);
+            }
+            
             Optional<Admin> adminOpt = adminRepository.findByUsername(username);
+            logger.debug("adminRepository.findByUsername('{}') returned: {}", 
+                username, adminOpt.isPresent() ? "found" : "not found");
+                
             if (adminOpt.isPresent()) {
                 Admin admin = adminOpt.get();
                 logger.info("ADMIN FOUND - ID: {}, Username: {}", 

@@ -144,14 +144,17 @@ class ApiService {
     // Check if user is authenticated and has required role
     checkAuth(requiredRole = null) {
         if (!authService.isAuthenticated()) {
+            console.warn('User not authenticated, redirecting to login');
             // Redirect to login if not authenticated
             window.location.href = '/';
             return false;
         }
         
         if (requiredRole && !authService.hasRole(requiredRole)) {
-            // Redirect to unauthorized page or dashboard
-            window.location.href = '/unauthorized';
+            console.warn(`User does not have required role: ${requiredRole}`);
+            // Instead of redirecting to /unauthorized, redirect to home with an error message
+            // or handle it in a way that makes sense for your application
+            window.location.href = `/?error=unauthorized&requiredRole=${encodeURIComponent(requiredRole)}`;
             return false;
         }
         

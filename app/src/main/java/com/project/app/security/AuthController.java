@@ -42,11 +42,20 @@ public class AuthController {
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        String username = loginRequest.getUsername();
+        String username = loginRequest != null ? loginRequest.getUsername() : "[null]";
         logger.info("=== AUTHENTICATION STARTED for user: {} ===", username);
         logger.debug("Authentication request details - Username: {}, Password: [PROTECTED]", username);
         
         try {
+            // Log incoming request details
+            logger.debug("Incoming login request - Username: {}, Password present: {}", 
+                username, 
+                loginRequest != null && loginRequest.getPassword() != null && !loginRequest.getPassword().isEmpty());
+                
+            if (loginRequest == null) {
+                logger.error("Login request body is null");
+                return ResponseEntity.badRequest().body(Map.of("error", "Login request cannot be null"));
+            }
             // Basic validation
             if (username == null || username.trim().isEmpty()) {
                 logger.error("Authentication failed: Username is null or empty");
@@ -73,8 +82,20 @@ public class AuthController {
             logger.debug("AuthenticationToken credentials: [PROTECTED]");
             
             // Attempt authentication
-            Authentication authentication = authenticationManager.authenticate(authenticationToken);
-            logger.info("Authentication successful for user: {}", username);
+            logger.debug("Attempting to authenticate user: {}", username);
+            Authentication authentication = null;
+            try {
+                authentication = authenticationManager.authenticate(authenticationToken);
+                logger.info("Authentication successful for user: {}", username);
+            } catch (Exception e) {
+                logger.error("Authentication failed for user: {}", username, e);
+                String errorMessage = "Authentication failed: " + e.getMessage();
+                if (e.getCause() != null) {
+                    errorMessage += " - " + e.getCause().getMessage();
+                }
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", errorMessage));
+            }
             
             // Log authentication details
             if (authentication == null) {
@@ -93,12 +114,28 @@ public class AuthController {
             
             // Generate JWT token
             logger.debug("Generating JWT token for user: {}", username);
-            String jwt = tokenProvider.generateToken(authentication);
+            String jwt;
+            try {
+                jwt = tokenProvider.generateToken(authentication);
+                logger.debug("Successfully generated JWT token for user: {}", username);
+            } catch (Exception e) {
+                logger.error("Failed to generate JWT token for user: {}", username, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to generate authentication token"));
+            }
             
             // Get user roles
-            List<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+            List<String> roles;
+            try {
+                roles = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
+                logger.debug("User {} has roles: {}", username, roles);
+            } catch (Exception e) {
+                logger.error("Failed to extract authorities for user: {}", username, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to process user roles"));
+            }
             
             logger.info("=== AUTHENTICATION SUCCESSFUL for user: {}, roles: {} ===", username, roles);
             
