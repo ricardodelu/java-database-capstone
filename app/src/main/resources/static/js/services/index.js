@@ -29,12 +29,12 @@ class LoginHandler {
         console.log('Login attempt:', type, data);
         
         try {
-            // Map the login type to the expected username field
-            const loginData = {
-                username: data.email || data.username, // Handle both email and username
-                password: data.password
-            };
-            console.log('Sending login request with data:', JSON.stringify(loginData));
+            // For admin login, use username; for others, use email
+            const loginData = type === 'adminLogin' 
+                ? { username: data.username, password: data.password }
+                : { email: data.email, password: data.password };
+                
+            console.log('Sending login request with data:', JSON.stringify(loginData, null, 2));
 
             // Make the login request
             const response = await fetch('/api/auth/signin', {
@@ -130,16 +130,13 @@ class LoginHandler {
             console.log('User role determined:', role);
             
             // Close the login modal
-            const modal = document.getElementById('loginModal');
-            if (modal) {
-                const modalInstance = bootstrap.Modal.getInstance(modal);
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                const modalInstance = bootstrap.Modal.getInstance(loginModal);
                 if (modalInstance) {
                     modalInstance.hide();
                 }
             }
-            
-            // Load the appropriate dashboard based on role
-            console.log('Redirecting to dashboard for role:', role);
             
             // Clear any error messages
             const errorElement = document.getElementById('loginError');
@@ -148,23 +145,26 @@ class LoginHandler {
                 errorElement.style.display = 'none';
             }
             
-            // Use a small timeout to ensure the modal is closed before redirecting
-            setTimeout(() => {
-                switch(role) {
-                    case 'admin':
-                        window.location.href = '/admin/dashboard';
-                        break;
-                    case 'doctor':
-                        window.location.href = '/doctor/dashboard';
-                        break;
-                    case 'patient':
-                        window.location.href = '/patient/dashboard';
-                        break;
-                    default:
-                        console.error('Unknown role:', role);
-                        window.location.href = '/';
+            // Use the SPA's navigation to load the dashboard
+            // This ensures the JWT token is included in API requests
+            console.log('Loading dashboard for role:', role);
+            
+            // Use the app's loadDashboard method to handle the navigation
+            // This will load the dashboard content via API calls with the JWT token
+            if (window.app && typeof window.app.loadDashboard === 'function') {
+                try {
+                    await window.app.loadDashboard(role);
+                    // Update the URL without reloading the page
+                    window.history.pushState({}, '', `/${role}/dashboard`);
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                    // Fall back to full page reload if SPA navigation fails
+                    window.location.href = `/${role}/dashboard`;
                 }
-            }, 100);
+            } else {
+                console.warn('App instance or loadDashboard method not found, falling back to page reload');
+                window.location.href = `/${role}/dashboard`;
+            }
         } catch (error) {
             console.error('Login error:', error);
             

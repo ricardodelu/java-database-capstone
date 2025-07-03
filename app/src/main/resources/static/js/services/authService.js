@@ -7,20 +7,30 @@ class AuthService {
 
     // Store the JWT token and user info in localStorage
     setAuth(token, user) {
-        console.log('setAuth called with:', { 
-            token: token ? `token (${token.length} chars)` : 'no token',
+        console.group('🔐 setAuth');
+        console.log('📥 Received auth data:', { 
+            token: token ? `token (${token.length} chars)` : '❌ no token',
             tokenPrefix: token ? token.substring(0, 10) + '...' : 'n/a',
             user: user ? {
                 username: user.username,
                 roles: user.roles
-            } : 'no user'
+            } : '❌ no user data'
         });
         
+        // Validate input
         if (!token || !user) {
-            console.warn('Cannot set auth: missing', { 
+            console.error('❌ Cannot set auth: missing data', { 
                 missingToken: !token, 
                 missingUser: !user 
             });
+            console.groupEnd();
+            return false;
+        }
+        
+        // Validate token format (basic check)
+        if (token.split('.').length !== 3) {
+            console.error('❌ Invalid JWT token format');
+            console.groupEnd();
             return false;
         }
         
@@ -30,31 +40,37 @@ class AuthService {
                 throw new Error('localStorage is not available');
             }
             
-            // Store the token
-            console.log('Storing token in localStorage with key:', this.tokenKey);
+            console.log('💾 Storing token in localStorage...');
             localStorage.setItem(this.tokenKey, token);
+            console.log('✅ Token stored with key:', this.tokenKey);
             
-            // Verify the token was stored
+            // Verify the token was stored correctly
             const storedToken = localStorage.getItem(this.tokenKey);
             if (storedToken !== token) {
+                console.error('❌ Token storage verification failed');
+                console.log('Original token length:', token.length);
+                console.log('Stored token length:', storedToken?.length || 0);
                 throw new Error('Token storage verification failed');
             }
             
-            // Store the user data
-            console.log('Storing user data in localStorage with key:', this.userKey);
+            // Store user data
+            console.log('👤 Storing user data...');
             const userString = JSON.stringify(user);
             localStorage.setItem(this.userKey, userString);
+            console.log('✅ User data stored with key:', this.userKey);
             
-            // Verify the user data was stored
+            // Verify user data was stored
             const storedUser = localStorage.getItem(this.userKey);
             if (storedUser !== userString) {
+                console.error('❌ User data storage verification failed');
                 throw new Error('User data storage verification failed');
             }
             
-            // Update the current user
+            // Update current user in memory
             this.currentUser = user;
             
-            console.log('Auth data stored and verified successfully');
+            console.log('🎉 Auth data stored and verified successfully');
+            console.groupEnd();
             return true;
             
         } catch (error) {
@@ -165,9 +181,91 @@ class AuthService {
     // Get auth header for API requests
     getAuthHeader() {
         const token = this.getToken();
-        const header = token ? { 'Authorization': `Bearer ${token}` } : {};
-        console.log('Generated auth header:', header);
+        const hasToken = !!token;
+        const header = hasToken ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        console.group('Auth Service - getAuthHeader');
+        console.log('Token exists:', hasToken);
+        if (hasToken) {
+            console.log('Token length:', token.length);
+            console.log('Token prefix:', token.substring(0, 10) + '...');
+        }
+        console.log('Generated header:', header);
+        console.groupEnd();
+        
         return header;
+    }
+    
+    // Login method to handle authentication
+    async login(username, password) {
+        console.group('🔐 Login Flow');
+        console.log('🔑 Attempting login for user:', username);
+        
+        try {
+            console.log('📤 Sending login request to /api/auth/signin');
+            const response = await fetch('/api/auth/signin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+            
+            console.log('📥 Login response status:', response.status);
+            
+            if (!response.ok) {
+                let errorData;
+                try {
+                    errorData = await response.json();
+                    console.error('❌ Login failed with status', response.status, ':', errorData);
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.error('❌ Failed to parse error response. Raw response:', errorText);
+                    errorData = { message: 'Invalid server response' };
+                }
+                throw new Error(errorData.message || `Login failed with status ${response.status}`);
+            }
+            
+            let data;
+            try {
+                data = await response.json();
+                console.log('✅ Login successful, response data:', data);
+            } catch (e) {
+                console.error('❌ Failed to parse successful login response:', e);
+                throw new Error('Invalid server response format');
+            }
+            
+            if (!data.token) {
+                console.error('❌ No token in response:', data);
+                throw new Error('No authentication token received');
+            }
+            
+            console.log('🔑 Token received, length:', data.token.length);
+            console.log('👤 User info:', { username: data.username, roles: data.roles });
+            
+            // Store the auth data
+            console.log('💾 Storing auth data in localStorage...');
+            const authStored = this.setAuth(data.token, {
+                username: data.username,
+                roles: data.roles || []
+            });
+            
+            if (!authStored) {
+                console.error('❌ Failed to store auth data in localStorage');
+                throw new Error('Failed to store authentication data');
+            }
+            
+            console.log('✅ Auth data stored successfully');
+            console.groupEnd();
+            return data;
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error;
+        }
     }
 }
 

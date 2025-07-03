@@ -83,14 +83,55 @@ public class JwtTokenProvider {
     }
 
     public boolean validateToken(String authToken) {
+        logger.debug("Validating JWT token");
         try {
-            Jwts.parser()
+            logger.debug("Token to validate: {}", authToken.substring(0, Math.min(20, authToken.length())) + "...");
+            
+            // First check if token is well-formed
+            String[] parts = authToken.split("\\.");
+            if (parts.length != 3) {
+                logger.error("Invalid JWT token format: expected 3 parts, got {}", parts.length);
+                return false;
+            }
+            
+            // Parse and validate the token
+            Claims claims = Jwts.parser()
                 .verifyWith((SecretKey) getSigningKey())
                 .build()
-                .parseSignedClaims(authToken);
+                .parseSignedClaims(authToken)
+                .getPayload();
+                
+            // Check expiration
+            Date expiration = claims.getExpiration();
+            if (expiration != null && expiration.before(new Date())) {
+                logger.error("JWT token is expired: {}", expiration);
+                return false;
+            }
+            
+            // Check issued at
+            Date issuedAt = claims.getIssuedAt();
+            if (issuedAt != null && issuedAt.after(new Date())) {
+                logger.error("JWT token issued in the future: {}", issuedAt);
+                return false;
+            }
+            
+            logger.debug("JWT token validation successful");
+            logger.debug("Token subject: {}", claims.getSubject());
+            logger.debug("Token issued at: {}", issuedAt);
+            logger.debug("Token expires at: {}", expiration);
+            
             return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            logger.error("JWT validation error: {}", e.getMessage());
+            
+        } catch (MalformedJwtException e) {
+            logger.error("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            logger.error("JWT token is expired: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            logger.error("JWT token is unsupported: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during JWT validation: {}", e.getMessage(), e);
         }
         return false;
     }

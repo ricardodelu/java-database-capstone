@@ -59,17 +59,22 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // Public access to login page and static resources
+                // Public access to web resources
                 .requestMatchers(
                     "/",
                     "/index.html",
                     "/login",
                     "/login.html",
+                    "/js/**",
+                    "/css/**",
+                    "/images/**",
                     "/static/**",
                     "/assets/**",
-                    "/css/**",
-                    "/js/**",
-                    "/images/**",
-                    "/favicon.ico",
+                    "/services/**"
+                ).permitAll()
+                
+                // Public access to static resources with extensions
+                .requestMatchers(
                     "/**/*.js",
                     "/**/*.css",
                     "/**/*.png",
@@ -78,14 +83,20 @@ public class SecurityConfig {
                     "/**/*.gif",
                     "/**/*.svg",
                     "/**/*.ico",
-                    "/**/*.html"
+                    "/**/*.html",
+                    "/**/*.map"
                 ).permitAll()
+                
                 // Public access to authentication endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                // Public access to API documentation
                 .requestMatchers(
-                    "/v3/api-docs/**", 
-                    "/swagger-ui/**", 
+                    "/api/auth/**",
+                    "/api/auth/signin"
+                ).permitAll()
+                
+                // Public access to API documentation and webjars
+                .requestMatchers(
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/webjars/**"
                 ).permitAll()

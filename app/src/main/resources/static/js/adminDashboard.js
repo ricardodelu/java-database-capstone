@@ -1,4 +1,4 @@
-import { apiService } from '../services/apiService.js';
+import { apiService } from '/js/services/apiService.js';
 
 // Admin Dashboard Service
 class AdminDashboardService {

@@ -4,127 +4,215 @@ export class Modal {
         this.modalBody = document.getElementById('modal-body');
         this.closeBtn = document.getElementById('closeModal');
         
-        // Bind close button
+        // Initialize modal if it doesn't exist
+        if (!this.modal) {
+            this.createModal();
+        }
+        
+        // Bind events
+        this.bindEvents();
+    }
+    
+    createModal() {
+        // Create modal element
+        const modal = document.createElement('div');
+        modal.id = 'modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button id="closeModal" class="close" aria-label="Close">&times;</button>
+                <div id="modal-body"></div>
+            </div>
+        `;
+        
+        // Add to body if not already there
+        document.body.appendChild(modal);
+        
+        // Update references
+        this.modal = document.getElementById('modal');
+        this.modalBody = document.getElementById('modal-body');
+        this.closeBtn = document.getElementById('closeModal');
+    }
+    
+    bindEvents() {
+        // Close modal when clicking the close button
         this.closeBtn.addEventListener('click', () => this.closeModal());
         
-        // Close on outside click
-        window.addEventListener('click', (e) => {
+        // Close modal when clicking outside the content
+        this.modal.addEventListener('click', (e) => {
             if (e.target === this.modal) {
                 this.closeModal();
             }
         });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.classList.contains('show')) {
+                this.closeModal();
+            }
+        });
     }
-
+    
     openModal(type, data = null) {
+        // Set modal content
         this.modalBody.innerHTML = this.getModalContent(type, data);
-        this.modal.style.display = 'block';
-        this.attachModalListeners(type);
+        
+        // Show modal with animation
+        this.modal.style.display = 'flex';
+        // Trigger reflow to enable animation
+        void this.modal.offsetWidth;
+        this.modal.classList.add('show');
+        
+        // Focus first input when modal opens
+        const firstInput = this.modalBody.querySelector('input');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+        
+        // Attach form handlers
+        this.attachFormListeners(type);
     }
-
+    
     closeModal() {
-        this.modal.style.display = 'none';
-        this.modalBody.innerHTML = '';
+        // Hide modal with animation
+        this.modal.classList.remove('show');
+        
+        // Remove modal from DOM after animation completes
+        this.modal.addEventListener('transitionend', () => {
+            if (!this.modal.classList.contains('show')) {
+                this.modal.style.display = 'none';
+                this.modalBody.innerHTML = '';
+            }
+        }, { once: true });
     }
-
+    
     getModalContent(type, data) {
+        let title, formId, usernameLabel, usernameType;
+        
         switch(type) {
             case 'adminLogin':
-                return `
-                    <h2>Admin Login</h2>
-                    <form id="adminLoginForm">
-                        <input type="text" name="username" placeholder="Username" required>
-                        <input type="password" name="password" placeholder="Password" required>
-                        <button type="submit">Login</button>
-                    </form>
-                `;
+                title = 'Admin Login';
+                formId = 'adminLoginForm';
+                usernameLabel = 'Username';
+                usernameType = 'text';
+                break;
             case 'doctorLogin':
-                return `
-                    <h2>Doctor Login</h2>
-                    <form id="doctorLoginForm">
-                        <input type="email" name="email" placeholder="Email" required>
-                        <input type="password" name="password" placeholder="Password" required>
-                        <button type="submit">Login</button>
-                    </form>
-                `;
+                title = 'Doctor Login';
+                formId = 'doctorLoginForm';
+                usernameLabel = 'Email';
+                usernameType = 'email';
+                break;
             case 'patientLogin':
-                return `
-                    <h2>Patient Login</h2>
-                    <form id="patientLoginForm">
-                        <input type="email" name="email" placeholder="Email" required>
-                        <input type="password" name="password" placeholder="Password" required>
-                        <button type="submit">Login</button>
-                    </form>
-                `;
+                title = 'Patient Login';
+                formId = 'patientLoginForm';
+                usernameLabel = 'Email';
+                usernameType = 'email';
+                break;
             default:
-                return '<p>Invalid modal type</p>';
+                return '<div class="error-message">Invalid modal type</div>';
         }
+        
+        return `
+            <h2>${title}</h2>
+            <form id="${formId}" novalidate>
+                <div class="form-group">
+                    <label for="username">${usernameLabel}</label>
+                    <input type="${usernameType}" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <div class="password-field">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                        <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                            <span class="show-icon">👁️</span>
+                            <span class="hide-icon" style="display:none;">👁️</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="login-button">
+                        <span class="button-text">Login</span>
+                    </button>
+                </div>
+                <div class="error-message" style="display: none;"></div>
+            </form>
+        `;
     }
-
-    attachModalListeners(type) {
+    
+    attachFormListeners(type) {
         const form = this.modalBody.querySelector('form');
         if (!form) return;
         
-        // Add error message container if it doesn't exist
-        if (!form.querySelector('.error-message')) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.style.display = 'none';
-            errorDiv.style.color = '#dc3545';
-            errorDiv.style.marginTop = '10px';
-            form.appendChild(errorDiv);
+        // Toggle password visibility
+        const togglePassword = form.querySelector('.toggle-password');
+        const passwordInput = form.querySelector('input[type="password"]');
+        const showIcon = form.querySelector('.show-icon');
+        const hideIcon = form.querySelector('.hide-icon');
+        
+        if (togglePassword && passwordInput) {
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                showIcon.style.display = type === 'password' ? 'inline' : 'none';
+                hideIcon.style.display = type === 'password' ? 'none' : 'inline';
+            });
         }
         
+        // Form submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log('Form submitted in modal. Type:', type);
             
             // Get form elements
             const submitButton = form.querySelector('button[type="submit"]');
             const errorDiv = form.querySelector('.error-message');
+            const buttonText = submitButton.querySelector('.button-text');
             const inputs = form.querySelectorAll('input');
             
+            // Reset UI state
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            inputs.forEach(input => input.classList.remove('error'));
+            
             try {
-                // Disable form and show loading state
+                // Show loading state
                 submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+                submitButton.classList.add('button-loading');
+                buttonText.textContent = 'Logging in...';
                 
-                // Clear previous errors
-                errorDiv.style.display = 'none';
-                errorDiv.textContent = '';
-                inputs.forEach(input => input.classList.remove('is-invalid'));
-                
-                // Get form data
+                // Validate form
                 const formData = new FormData(form);
                 const data = Object.fromEntries(formData.entries());
                 
-                // Basic client-side validation
-                let hasErrors = false;
+                // Client-side validation
+                let isValid = true;
                 inputs.forEach(input => {
                     if (input.required && !input.value.trim()) {
-                        input.classList.add('is-invalid');
-                        hasErrors = true;
+                        input.classList.add('error');
+                        isValid = false;
+                    } else if (input.type === 'email' && input.value && !this.validateEmail(input.value)) {
+                        input.classList.add('error');
+                        throw new Error('Please enter a valid email address');
                     }
                 });
-                
-                if (hasErrors) {
+
+                if (!isValid) {
                     throw new Error('Please fill in all required fields');
                 }
+
+                // Log the form data for debugging
+                console.log('Form data:', { type, data });
                 
-                console.log('Dispatching modalSubmit event with data:', data);
-                
-                // Dispatch custom event for form submission
+                // Dispatch custom event with form data
                 const event = new CustomEvent('modalSubmit', {
-                    detail: { type, data }
+                    detail: {
+                        type: type,
+                        data: data
+                    },
+                    bubbles: true,
+                    cancelable: true
                 });
                 
-                // Add a one-time event listener for the response
-                const responseHandler = (response) => {
-                    if (response.detail && response.detail.success === false) {
-                        throw new Error(response.detail.message || 'Login failed');
-                    }
-                };
-                
-                document.addEventListener('modalResponse', responseHandler, { once: true });
+                // Dispatch the event
                 document.dispatchEvent(event);
                 
             } catch (error) {
@@ -134,9 +222,10 @@ export class Modal {
                 errorDiv.textContent = error.message || 'An error occurred. Please try again.';
                 errorDiv.style.display = 'block';
                 
-                // Re-enable form
+                // Reset button state
                 submitButton.disabled = false;
-                submitButton.innerHTML = 'Login';
+                submitButton.classList.remove('button-loading');
+                buttonText.textContent = 'Login';
                 
                 // Scroll to error
                 setTimeout(() => {
@@ -145,17 +234,22 @@ export class Modal {
             }
         });
         
-        // Add input event listeners to clear error state when typing
+        // Clear error state when typing
         const inputs = form.querySelectorAll('input');
         inputs.forEach(input => {
             input.addEventListener('input', () => {
-                input.classList.remove('is-invalid');
+                input.classList.remove('error');
                 const errorDiv = form.querySelector('.error-message');
                 if (errorDiv) {
                     errorDiv.style.display = 'none';
                 }
             });
         });
+    }
+    
+    validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
     }
 }
 

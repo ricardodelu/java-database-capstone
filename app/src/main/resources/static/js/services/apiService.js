@@ -1,4 +1,4 @@
-import { authService } from './authService.js';
+import { authService } from '/js/services/authService.js';
 
 class ApiService {
     constructor() {
@@ -17,25 +17,89 @@ class ApiService {
     // Get request with auth
     async get(endpoint) {
         const url = `${this.baseUrl}${endpoint}`;
+        const requestId = Math.random().toString(36).substring(2, 9);
+        const authHeader = authService.getAuthHeader();
+        
         const headers = {
             'Content-Type': 'application/json',
-            ...authService.getAuthHeader()
+            ...authHeader,
+            'X-Request-ID': requestId
         };
         
-        console.log(`Making GET request to: ${url}`);
-        console.log('Request headers:', headers);
+        console.group(`🔵 API Request #${requestId}`);
+        console.log('📤 Request:', {
+            method: 'GET',
+            url: url,
+            headers: headers,
+            credentials: 'include',
+            mode: 'cors'
+        });
+        
+        console.log('🔑 Auth Details:', {
+            hasAuthHeader: !!authHeader.Authorization,
+            authHeaderLength: authHeader.Authorization ? authHeader.Authorization.length : 0,
+            authHeaderPrefix: authHeader.Authorization ? authHeader.Authorization.substring(0, 20) + '...' : 'N/A',
+            localStorageToken: localStorage.getItem('jwtToken') ? 'Token exists' : 'No token',
+            localStorageTokenLength: localStorage.getItem('jwtToken')?.length || 0
+        });
+        
+        const startTime = performance.now();
         
         try {
             const response = await fetch(url, {
                 method: 'GET',
                 headers: headers,
-                credentials: 'include' // Important for cookies if using them
+                credentials: 'same-origin',
+                mode: 'cors',
+                referrerPolicy: 'strict-origin-when-cross-origin'
             });
             
-            console.log(`Response status for ${url}:`, response.status);
-            return await this.handleResponse(response);
+            const responseTime = Math.round(performance.now() - startTime);
+            const responseData = await response.clone().json().catch(() => ({}));
+            
+            console.log(`📥 Response [${response.status} ${response.statusText}]`, {
+                status: response.status,
+                statusText: response.statusText,
+                responseTime: `${responseTime}ms`,
+                responseData: responseData,
+                headers: Object.fromEntries([...response.headers.entries()])
+            });
+            
+            if (!response.ok) {
+                console.error('❌ Request failed with status:', response.status);
+                console.error('Response body:', responseData);
+                
+                if (response.status === 401) {
+                    console.error('🔐 401 Unauthorized - Possible issues:');
+                    console.error('1. Invalid or expired JWT token');
+                    console.error('2. Token not properly included in request');
+                    console.error('3. Backend JWT validation failure');
+                    console.error('4. CORS/credentials issue');
+                    
+                    // Additional debug info
+                    console.log('🔍 Debug Info:', {
+                        tokenInLocalStorage: !!localStorage.getItem('jwtToken'),
+                        authHeaderSent: !!authHeader.Authorization,
+                        requestUrl: url,
+                        requestHeaders: headers
+                    });
+                } else if (response.status === 403) {
+                    console.error('🔒 403 Forbidden - You do not have permission to access this resource');
+                }
+                
+                // Throw an error with the response data
+                const error = new Error(response.statusText || 'Request failed');
+                error.status = response.status;
+                error.response = responseData;
+                console.groupEnd();
+                throw error;
+            }
+            
+            console.groupEnd();
+            return responseData;
         } catch (error) {
-            console.error(`Error in GET ${url}:`, error);
+            console.error('Request Failed:', error);
+            console.groupEnd();
             throw error;
         }
     }
