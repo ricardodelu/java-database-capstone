@@ -85,13 +85,14 @@ class Header {
         style.id = 'modern-header-styles';
         style.textContent = `
             .modern-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                background: #ffffff;
+                color: #333;
                 padding: 1rem 0;
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                 position: sticky;
                 top: 0;
                 z-index: 1000;
+                border-bottom: 1px solid #e9ecef;
             }
 
             .header-container {
@@ -126,14 +127,14 @@ class Header {
             .logo-text {
                 font-size: 1.5rem;
                 font-weight: 700;
-                color: white;
+                color: #007bff;
             }
 
             .page-title {
                 font-size: 1.75rem;
                 font-weight: 600;
                 margin: 0;
-                color: white;
+                color: #333;
             }
 
             .header-right {
@@ -142,26 +143,25 @@ class Header {
             }
 
             .logout-btn {
-                background: rgba(255, 255, 255, 0.1);
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                color: white;
+                background-color: transparent;
+                border: 2px solid #007bff;
+                color: #007bff;
                 padding: 0.75rem 1.5rem;
-                border-radius: 8px;
+                border-radius: 6px;
                 cursor: pointer;
                 font-size: 0.9rem;
                 font-weight: 500;
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
-                transition: all 0.3s ease;
-                backdrop-filter: blur(10px);
+                transition: all 0.2s ease;
             }
 
             .logout-btn:hover {
-                background: rgba(255, 255, 255, 0.2);
-                border-color: rgba(255, 255, 255, 0.5);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                background-color: #007bff;
+                color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
             }
 
             .logout-btn i {

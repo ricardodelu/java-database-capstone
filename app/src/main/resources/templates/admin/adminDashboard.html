@@ -10,7 +10,7 @@
     <style>
         /* Critical styles that must be inlined */
         body {
-            background-image: url('/assets/images/hospital-background.jpg');
+            background-image: url('/assets/images/hospital-bg-simple.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -82,9 +82,7 @@
             </main>
             
             <!-- Footer -->
-            <footer id="footer">
-                <p>&copy; 2025 Clinic Management System</p>
-            </footer>
+            <div id="footer"></div>
         </div>
     </div>
 
@@ -162,6 +160,8 @@
     <!-- Application Scripts -->
     <script type="module" src="/js/services/apiService.js"></script>
     <script type="module" src="/js/services/authService.js"></script>
+    <script type="module" src="/js/components/header.js"></script>
+    <script type="module" src="/js/components/footer.js"></script>
     
     <!-- Import authService for logout functionality -->
     <script type="module">
@@ -173,6 +173,16 @@
     <script type="module">
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // Initialize header and footer
+                const { Header } = await import('/js/components/header.js');
+                const { Footer } = await import('/js/components/footer.js');
+                
+                const header = new Header();
+                const footer = new Footer();
+                
+                await header.mount('header', 'Admin Dashboard', true);
+                await footer.mount('footer');
+                
                 // Import the AdminDashboardService
                 const { AdminDashboardService } = await import('/js/adminDashboard.js');
                 console.log('Initializing AdminDashboardService...');

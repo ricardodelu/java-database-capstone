@@ -15,47 +15,6 @@ class Footer {
                 <div class="footer-container">
                     <div class="footer-content">
                         <div class="footer-section">
-                            <h3>ClinicMS</h3>
-                            <p>Modern healthcare management system designed to streamline clinic operations and improve patient care.</p>
-                            <div class="social-links">
-                                <a href="#" class="social-link" aria-label="Facebook">
-                                    <i class="fab fa-facebook"></i>
-                                </a>
-                                <a href="#" class="social-link" aria-label="Twitter">
-                                    <i class="fab fa-twitter"></i>
-                                </a>
-                                <a href="#" class="social-link" aria-label="LinkedIn">
-                                    <i class="fab fa-linkedin"></i>
-                                </a>
-                                <a href="#" class="social-link" aria-label="Instagram">
-                                    <i class="fab fa-instagram"></i>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="footer-section">
-                            <h4>Quick Links</h4>
-                            <ul class="footer-links">
-                                <li><a href="/">Home</a></li>
-                                <li><a href="/about">About Us</a></li>
-                                <li><a href="/services">Services</a></li>
-                                <li><a href="/appointments">Appointments</a></li>
-                                <li><a href="/contact">Contact</a></li>
-                            </ul>
-                        </div>
-                        
-                        <div class="footer-section">
-                            <h4>Services</h4>
-                            <ul class="footer-links">
-                                <li><a href="/services/cardiology">Cardiology</a></li>
-                                <li><a href="/services/neurology">Neurology</a></li>
-                                <li><a href="/services/pediatrics">Pediatrics</a></li>
-                                <li><a href="/services/orthopedics">Orthopedics</a></li>
-                                <li><a href="/services/dermatology">Dermatology</a></li>
-                            </ul>
-                        </div>
-                        
-                        <div class="footer-section">
                             <h4>Contact Info</h4>
                             <div class="contact-info">
                                 <div class="contact-item">
@@ -81,11 +40,6 @@ class Footer {
                     <div class="footer-bottom">
                         <div class="footer-bottom-content">
                             <p>&copy; 2025 Clinic Management System. All rights reserved.</p>
-                            <div class="footer-bottom-links">
-                                <a href="/privacy">Privacy Policy</a>
-                                <a href="/terms">Terms of Service</a>
-                                <a href="/sitemap">Sitemap</a>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,10 +74,11 @@ class Footer {
         style.id = 'modern-footer-styles';
         style.textContent = `
             .modern-footer {
-                background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-                color: #ecf0f1;
-                padding: 3rem 0 0 0;
+                background: #f8f9fa;
+                color: #333;
+                padding: 2rem 0 0 0;
                 margin-top: auto;
+                border-top: 1px solid #e9ecef;
             }
 
             .footer-container {
@@ -134,20 +89,20 @@ class Footer {
 
             .footer-content {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 2rem;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 3rem;
                 margin-bottom: 2rem;
             }
 
             .footer-section h3 {
-                color: #3498db;
+                color: #007bff;
                 font-size: 1.5rem;
                 margin-bottom: 1rem;
                 font-weight: 600;
             }
 
             .footer-section h4 {
-                color: #3498db;
+                color: #007bff;
                 font-size: 1.1rem;
                 margin-bottom: 1rem;
                 font-weight: 600;
@@ -156,7 +111,7 @@ class Footer {
             .footer-section p {
                 line-height: 1.6;
                 margin-bottom: 1rem;
-                color: #bdc3c7;
+                color: #6c757d;
             }
 
             .social-links {
@@ -197,7 +152,7 @@ class Footer {
             }
 
             .footer-links a {
-                color: #bdc3c7;
+                color: #6c757d;
                 text-decoration: none;
                 transition: color 0.3s ease;
                 display: inline-block;
@@ -205,7 +160,7 @@ class Footer {
             }
 
             .footer-links a:hover {
-                color: #3498db;
+                color: #007bff;
                 transform: translateX(5px);
             }
 
@@ -219,11 +174,11 @@ class Footer {
                 display: flex;
                 align-items: flex-start;
                 gap: 0.75rem;
-                color: #bdc3c7;
+                color: #6c757d;
             }
 
             .contact-item i {
-                color: #3498db;
+                color: #007bff;
                 width: 16px;
                 margin-top: 0.25rem;
                 flex-shrink: 0;
@@ -234,9 +189,9 @@ class Footer {
             }
 
             .footer-bottom {
-                border-top: 1px solid rgba(236, 240, 241, 0.1);
+                border-top: 1px solid #e9ecef;
                 padding: 1.5rem 0;
-                background: rgba(0, 0, 0, 0.1);
+                background: #e9ecef;
             }
 
             .footer-bottom-content {
@@ -249,7 +204,7 @@ class Footer {
 
             .footer-bottom p {
                 margin: 0;
-                color: #95a5a6;
+                color: #6c757d;
                 font-size: 0.9rem;
             }
 
@@ -259,14 +214,14 @@ class Footer {
             }
 
             .footer-bottom-links a {
-                color: #95a5a6;
+                color: #6c757d;
                 text-decoration: none;
                 font-size: 0.9rem;
                 transition: color 0.3s ease;
             }
 
             .footer-bottom-links a:hover {
-                color: #3498db;
+                color: #007bff;
             }
 
             @media (max-width: 768px) {

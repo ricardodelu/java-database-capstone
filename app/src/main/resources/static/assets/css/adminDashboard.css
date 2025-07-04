@@ -81,6 +81,14 @@ html, body {
     margin: 20px 0;
 }
 
+/* Action Bar */
+.action-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    padding: 0;
+}
+
 /* Search Bar */
 .search-container {
     margin-bottom: 20px;

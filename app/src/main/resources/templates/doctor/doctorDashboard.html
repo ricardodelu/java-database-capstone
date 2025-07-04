@@ -4,18 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doctor Dashboard</title>
+    <base href="/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/images/logo/logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- CSS -->
-    <link rel="stylesheet" th:href="@{/assets/css/doctorDashboard.css}">
-    <link rel="stylesheet" th:href="@{/assets/css/style.css}">
-    
-    <!-- JavaScript -->
-    <script th:src="@{/js/render.js}" defer></script>
-    <script th:src="@{/js/util.js}" defer></script>
-    <script th:src="@{/js/components/header.js}" defer></script>
-    <script th:src="@{/js/components/footer.js}" defer></script>
-    <script th:src="@{/js/components/patientRows.js}" defer></script>
-</head>
+    <link rel="stylesheet" href="/assets/css/doctorDashboard.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
 <body>
     <div class="container">
         <div class="wrapper">
@@ -63,24 +67,96 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script type="module" src="/js/main.js"></script>
-
-    <!-- Modal -->
-    <div id="modal" class="modal">
+    <!-- Prescription Modal -->
+    <div id="prescriptionModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span id="closeModal" class="close">&times;</span>
-            <div id="modal-body">
-                <!-- Modal content will be dynamically inserted here -->
-            </div>
+            <span class="close">&times;</span>
+            <h2>Add Prescription</h2>
+            <form id="prescriptionForm" class="prescription-form">
+                <input type="hidden" id="patientId" name="patientId">
+                
+                <div class="form-group">
+                    <label for="medication">Medication *</label>
+                    <input type="text" id="medication" name="medication" required class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="dosage">Dosage *</label>
+                    <input type="text" id="dosage" name="dosage" required class="form-control" placeholder="e.g., 500mg twice daily">
+                </div>
+                
+                <div class="form-group">
+                    <label for="duration">Duration *</label>
+                    <input type="text" id="duration" name="duration" required class="form-control" placeholder="e.g., 7 days">
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Additional instructions or notes..."></textarea>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Prescription</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Service Scripts -->
-    <script type="module" th:src="@{/js/services/doctorDashboard.js}" defer></script>
-    <script type="module" th:src="@{/js/services/patientServices.js}" defer></script>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
     
-    <!-- Font Awesome for icons -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" crossorigin="anonymous"></script>
+    <!-- Success/Error Toast -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- Error Container -->
+    <div id="errorContainer" class="error-message" style="display: none;">
+        <p>Error loading appointments. Please try again later.</p>
+    </div>
+
+    <!-- Application Scripts -->
+    <script type="module" src="/js/services/apiService.js"></script>
+    <script type="module" src="/js/services/authService.js"></script>
+    
+    <!-- Import authService for logout functionality -->
+    <script type="module">
+        import { authService } from '/js/services/authService.js';
+        window.authService = authService;
+    </script>
+    
+    <!-- Initialize the dashboard -->
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Import the DoctorDashboardService
+                const { DoctorDashboardService } = await import('/js/doctorDashboard.js');
+                console.log('Initializing DoctorDashboardService...');
+                
+                // Get the singleton instance
+                const dashboardService = DoctorDashboardService.getInstance();
+                console.log('DoctorDashboardService initialized');
+                
+                // Load appointments data
+                await dashboardService.loadAppointments();
+                console.log('Appointments data loaded');
+                
+            } catch (error) {
+                console.error('Error initializing doctor dashboard:', error);
+                // Show error to user
+                const errorContainer = document.getElementById('errorContainer');
+                if (errorContainer) {
+                    errorContainer.textContent = 'Error initializing dashboard. Please refresh the page or contact support.';
+                    errorContainer.style.display = 'block';
+                }
+                
+                // If unauthorized, redirect to login
+                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                    window.location.href = '/login';
+                }
+            }
+        });
+    </script>
 </body>
 </html>
