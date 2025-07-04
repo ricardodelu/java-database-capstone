@@ -76,10 +76,13 @@ public class SecurityConfig {
                     "/favicon.ico"
                 ).permitAll()
                 
-                // Admin endpoints
+                // Admin endpoints - allow access to HTML templates, but protect API endpoints
                 .requestMatchers(
                     "/admin",
                     "/admin/",
+                    "/admin/dashboard"
+                ).permitAll()
+                .requestMatchers(
                     "/admin/**"
                 ).hasRole("ADMIN")
                 

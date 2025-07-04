@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Medical Records System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header h1 {
+            color: #2c3e50;
+            margin: 0 0 0.5rem 0;
+        }
+        .login-header p {
+            color: #7f8c8d;
+            margin: 0;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .error-message {
+            color: #e74c3c;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Medical Records System</h1>
+            <p id="loginRoleMessage">Please sign in to continue</p>
+        </div>
+        <form id="loginForm">
+            <input type="hidden" id="role" name="role">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="loading" id="loading"></div>
+            <div class="error-message" id="errorMessage">
+                Invalid username or password. Please try again.
+            </div>
+            <button type="submit" class="btn" id="loginButton">Sign In</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { authService } from './js/services/authService.js';
+        import { apiService } from './js/services/apiService.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get role from URL parameter or sessionStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            let role = urlParams.get('role') || sessionStorage.getItem('selectedRole') || 'user';
+            
+            // Store the role in sessionStorage if it came from URL
+            if (urlParams.get('role')) {
+                sessionStorage.setItem('selectedRole', role);
+            }
+            
+            // Update UI based on role
+            const roleMessage = document.getElementById('loginRoleMessage');
+            const roleTitle = role.charAt(0).toUpperCase() + role.slice(1);
+            document.title = `${roleTitle} Login - Medical Records System`;
+            roleMessage.textContent = `Please sign in as ${roleTitle}`;
+            document.getElementById('role').value = role;
+            
+            // If already authenticated, redirect to appropriate dashboard
+            if (authService.isAuthenticated()) {
+                const user = authService.getCurrentUser();
+                if (user && user.roles) {
+                    if (user.roles.includes('ROLE_ADMIN')) {
+                        window.location.href = '/admin/dashboard.html';
+                    } else if (user.roles.includes('ROLE_DOCTOR')) {
+                        window.location.href = '/doctor/dashboard.html';
+                    } else if (user.roles.includes('ROLE_PATIENT')) {
+                        window.location.href = '/patient/dashboard.html';
+                    }
+                }
+            }
+            const loginForm = document.getElementById('loginForm');
+            const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
+            const loginButton = document.getElementById('loginButton');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+
+                // Show loading state
+                loading.style.display = 'block';
+                errorMessage.style.display = 'none';
+                loginButton.disabled = true;
+
+                try {
+                    // Call the login API with role
+                    const loginData = {
+                        username,
+                        password,
+                        role: document.getElementById('role').value
+                    };
+                    console.log('Attempting login with data:', loginData);
+                    
+                    const response = await apiService.post('/api/auth/login', loginData)
+                        .catch(error => {
+                            console.error('Login API error:', error);
+                            console.error('Error details:', {
+                                status: error.status,
+                                message: error.message,
+                                response: error.data
+                            });
+                            throw error;
+                        });
+
+                    // Store the token and user data
+                    if (response.token && response.user) {
+                        authService.setAuth(response.token, response.user);
+                        
+                        // Clear the selected role from sessionStorage
+                        sessionStorage.removeItem('selectedRole');
+                        
+                        // Redirect based on user role
+                        if (authService.isAdmin()) {
+                            window.location.href = '/admin/dashboard.html';
+                        } else if (response.user.roles && response.user.roles.includes('ROLE_DOCTOR')) {
+                            window.location.href = '/doctor/dashboard.html';
+                        } else if (response.user.roles && response.user.roles.includes('ROLE_PATIENT')) {
+                            window.location.href = '/patient/dashboard.html';
+                        } else {
+                            window.location.href = '/dashboard.html';
+                        }
+                    } else {
+                        throw new Error('Invalid response from server');
+                    }
+                } catch (error) {
+                    console.error('Login failed:', error);
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = error.message || 'Login failed. Please try again.';
+                } finally {
+                    // Reset loading state
+                    loading.style.display = 'none';
+                    loginButton.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

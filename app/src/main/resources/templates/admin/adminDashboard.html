@@ -100,17 +100,6 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="email">Email *</label>
-                    <input type="email" id="email" name="email" required class="form-control">
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password <span id="passwordRequired">*</span></label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-                    <small id="passwordHelp" class="form-text text-muted">Minimum 8 characters</small>
-                </div>
-                
-                <div class="form-group">
                     <label for="specialty">Specialty *</label>
                     <select id="specialty" name="specialty" required class="form-control">
                         <option value="">Select a specialty</option>
@@ -120,6 +109,17 @@
                         <option value="Orthopedics">Orthopedics</option>
                         <option value="Dermatology">Dermatology</option>
                     </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password <span id="passwordRequired">*</span></label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                    <small id="passwordHelp" class="form-text text-muted">Minimum 8 characters</small>
                 </div>
                 
                 <div class="form-group">
@@ -151,7 +151,47 @@
     <!-- Add admin dashboard ID for initialization -->
     <div id="adminDashboard"></div>
     
-    <!-- Load scripts -->
-    <script type="module" src="/js/adminDashboard.js"></script>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Application Scripts -->
+    <script type="module" src="/js/services/apiService.js"></script>
+    <script type="module" src="/js/services/authService.js"></script>
+    
+    <!-- Initialize the dashboard -->
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Import the AdminDashboardService
+                const { AdminDashboardService } = await import('/js/adminDashboard.js');
+                console.log('Initializing AdminDashboardService...');
+                
+                // Get the singleton instance
+                const dashboardService = AdminDashboardService.getInstance();
+                console.log('AdminDashboardService initialized');
+                
+                // Load doctors data
+                await dashboardService.loadDoctors();
+                console.log('Doctors data loaded');
+                
+            } catch (error) {
+                console.error('Error initializing admin dashboard:', error);
+                // Show error to user
+                const errorContainer = document.getElementById('errorContainer');
+                if (errorContainer) {
+                    errorContainer.textContent = 'Error initializing dashboard. Please refresh the page or contact support.';
+                    errorContainer.style.display = 'block';
+                }
+                
+                // If unauthorized, redirect to login
+                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                    window.location.href = '/login';
+                }
+            }
+        });
+    </script>
 </body>
 </html>

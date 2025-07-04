@@ -31,7 +31,6 @@ class AdminDashboardService {
         this.eventListeners = [];
         this.doctors = [];
         this.editingDoctorId = null;
-        this.isModalOpen = false;
         
         // DOM elements
         this.modal = null;
@@ -41,14 +40,33 @@ class AdminDashboardService {
         this.specialtyFilter = null;
         this.timeFilter = null;
         this.modalTitle = null;
-        this.elements = {}; // For storing dynamic elements
+        
+        // Bind methods
+        this.initialize = this.initialize.bind(this);
+        this.cleanup = this.cleanup.bind(this);
+        this.initializeEventListeners = this.initializeEventListeners.bind(this);
+        this.loadDoctors = this.loadDoctors.bind(this);
+        this.filterDoctors = this.filterDoctors.bind(this);
+        this.renderDoctors = this.renderDoctors.bind(this);
+        this.createDoctorCard = this.createDoctorCard.bind(this);
+        this.openModalForAdd = this.openModalForAdd.bind(this);
+        this.openModalForEdit = this.openModalForEdit.bind(this);
+        this.handleFormSubmit = this.handleFormSubmit.bind(this);
+        this.handleDeleteDoctor = this.handleDeleteDoctor.bind(this);
+        this.closeModal = this.closeModal.bind(this);
+        this._addModalEventListeners = this._addModalEventListeners.bind(this);
+        this._removeModalEventListeners = this._removeModalEventListeners.bind(this);
+        this.showLoading = this.showLoading.bind(this);
+        this.hideLoading = this.hideLoading.bind(this);
+        this.showError = this.showError.bind(this);
+        this.showSuccess = this.showSuccess.bind(this);
         
         // Initialize when DOM is fully loaded
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.initialize());
+            document.addEventListener('DOMContentLoaded', this.initialize);
         } else {
             // DOM already loaded
-            setTimeout(() => this.initialize(), 0);
+            setTimeout(this.initialize, 0);
         }
     }
     
@@ -189,8 +207,13 @@ class AdminDashboardService {
         // Set focus to first form field
         const firstInput = modal.querySelector('input, select, textarea');
         if (firstInput) {
-            firstInput.focus();
-        }
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            this.isModalOpen = false;
+            this.editingDoctorId = null;
+        }, 300);
     }
     
     /**
@@ -278,11 +301,11 @@ class AdminDashboardService {
         }
         
         if (this.elements.specialtyFilter) {
-            this.elements.specialtyFilter.addEventListener('change', () => this.loadDoctors());
+            this.elements.specialtyFilter.addEventListener('change', () => this.filterDoctors());
             this.eventListeners.push({
                 element: this.elements.specialtyFilter,
                 type: 'change',
-                handler: this.loadDoctors
+                handler: this.filterDoctors
             });
         }
         
@@ -307,35 +330,38 @@ class AdminDashboardService {
     /**
      * Clean up all event listeners
      */
-    /**
-     * Clean up all event listeners
-     */
     cleanup() {
         console.log('Cleaning up AdminDashboardService event listeners');
         this.eventListeners.forEach(({ element, event, handler }) => {
-            if (element && element.removeEventListener) {
-                element.removeEventListener(event, handler);
-            }
+            element.removeEventListener(event, handler);
         });
         this.eventListeners = [];
+            }
+        });
     }
     
-    /**
-     * Initialize event listeners
-     */
-    initializeEventListeners() {
-        // Remove any existing event listeners first
-        this.cleanup();
-        
-        // Add new event listeners
-        if (this.elements.addDoctorBtn) {
-            this.elements.addDoctorBtn.addEventListener('click', () => this.openModalForAdd());
-            this.eventListeners.push({
-                element: this.elements.addDoctorBtn,
-                type: 'click',
-                handler: this.openModalForAdd
-            });
-        }
+    // Handle form submission
+    if (modalForm) {
+        modalForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+    }
+}
+
+/**
+ * Initialize event listeners
+ */
+initializeEventListeners() {
+    // Remove any existing event listeners first
+    this.cleanup();
+    
+    // Add new event listeners
+    if (this.elements.addDoctorBtn) {
+        this.elements.addDoctorBtn.addEventListener('click', () => this.openModalForAdd());
+        this.eventListeners.push({
+            element: this.elements.addDoctorBtn,
+            type: 'click',
+            handler: this.openModalForAdd
+        });
+    }
     
     if (this.elements.searchBar) {
         this.elements.searchBar.addEventListener('input', () => this.filterDoctors());
@@ -393,8 +419,7 @@ async loadDoctors() {
         this.showLoading();
         
         // Use the apiService to make the request to the protected endpoint
-        // Note: The base URL is already handled by apiService, so we don't need to include /api here
-        const response = await apiService.get('/admin/dashboard');
+        const response = await apiService.get('/api/admin/dashboard');
         
         if (response && response.data) {
             // The response should contain the dashboard data
@@ -439,11 +464,6 @@ async loadDoctors() {
         } else {
             errorMessage += error.message || 'An unknown error occurred.';
         }
-        
-        this.showError(errorMessage);
-        throw new Error(errorMessage);
-    }
-}
     /**
      * Filter doctors based on search and filter criteria
      */
@@ -591,12 +611,9 @@ async loadDoctors() {
             this.hideLoading();
         }
     }
-    
-    /**
-     * Add event listeners for the modal
-     * @private
-     */
-    _addModalEventListeners() {
+}
+
+_addModalEventListeners() {
     // Clean up any existing modal listeners first
     this._removeModalEventListeners();
     
@@ -670,21 +687,22 @@ showSuccess(message) {
     successDiv.className = 'success-message';
     successDiv.textContent = message;
     
-        if (this.doctorList) {
-            this.doctorList.insertAdjacentElement('beforebegin', successDiv);
-            setTimeout(() => successDiv.remove(), 5000);
-        } else {
-            console.log('Success:', message);
-        }
+    if (this.doctorList) {
+        this.doctorList.insertAdjacentElement('beforebegin', successDiv);
+        setTimeout(() => successDiv.remove(), 5000);
+    } else {
+        console.log('Success:', message);
     }
 }
+}
 
-// Export the class for use in other modules
+// Export the singleton instance for use in other modules
 export { AdminDashboardService };
 
-
-// Self-executing function to initialize the admin dashboard
-(async function initAdminDashboard() {
+/**
+ * Initialize the admin dashboard when the DOM is loaded
+ */
+function initAdminDashboard() {
     try {
         console.log('Initializing admin dashboard...');
         
@@ -692,22 +710,14 @@ export { AdminDashboardService };
         const dashboardService = AdminDashboardService.getInstance();
         
         // Clean up any existing instance
-        if (typeof dashboardService.cleanup === 'function') {
-            dashboardService.cleanup();
-        }
+        dashboardService.cleanup();
         
         // Initialize the service
-        if (typeof dashboardService.initialize === 'function') {
-            await dashboardService.initialize();
-        } else {
-            console.error('initialize method not found on dashboardService');
-        }
+        dashboardService.initialize();
         
         // Add cleanup on page unload
         window.addEventListener('beforeunload', () => {
-            if (typeof dashboardService.cleanup === 'function') {
-                dashboardService.cleanup();
-            }
+            dashboardService.cleanup();
         });
         
         // Make it available globally for debugging
@@ -721,9 +731,13 @@ export { AdminDashboardService };
         if (errorContainer) {
             errorContainer.style.display = 'block';
             errorContainer.textContent = `Failed to initialize dashboard: ${error.message}`;
-        } else {
-            // Fallback error display
-            alert(`Failed to initialize dashboard: ${error.message}`);
         }
     }
-})();
+}
+
+// Initialize the admin dashboard when the DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminDashboard);
+} else {
+    initAdminDashboard();
+}

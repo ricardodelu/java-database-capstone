@@ -72,20 +72,8 @@
             // Store the selected role in sessionStorage
             sessionStorage.setItem('selectedRole', role);
             
-            // Redirect based on role
-            switch(role) {
-                case 'admin':
-                    window.location.href = '/admin/dashboard';
-                    break;
-                case 'doctor':
-                    window.location.href = '/doctor/dashboard';
-                    break;
-                case 'patient':
-                    window.location.href = '/patient/dashboard';
-                    break;
-                default:
-                    console.error('Unknown role:', role);
-            }
+            // Redirect to login page with role parameter
+            window.location.href = `/login.html?role=${role}`;
         }
         
         // JWT Test Function
