@@ -11,7 +11,7 @@ class App {
         document.addEventListener('click', (e) => {
             if (e.target.matches('#logout-link, #logout-link *')) {
                 e.preventDefault();
-                authService.logout();
+                authService.clearAuth();
             }
         });
 
@@ -123,7 +123,7 @@ class App {
             }
         } catch (error) {
             console.error('Error checking auth state:', error);
-            authService.logout();
+            authService.clearAuth();
         }
     }
 
@@ -222,7 +222,7 @@ class App {
                         console.error('Error loading admin dashboard:', e);
                         // If there's an error, redirect to login to refresh the token
                         if (e.response && (e.response.status === 401 || e.response.status === 403)) {
-                            authService.logout();
+                            authService.clearAuth();
                             window.location.href = '/login';
                         } else {
                             throw new Error('Failed to load admin dashboard: ' + (e.message || 'Unknown error'));
@@ -307,6 +307,17 @@ class App {
                 existingWelcome.replaceWith(welcomeMsg);
             } else {
                 header.appendChild(welcomeMsg);
+            }
+        }
+    }
+
+    updateUIForUnauthenticatedUser() {
+        // Optionally, update the UI to show the user is logged out or unauthenticated
+        const header = document.querySelector('header');
+        if (header) {
+            const existingWelcome = header.querySelector('.user-welcome');
+            if (existingWelcome) {
+                existingWelcome.remove();
             }
         }
     }

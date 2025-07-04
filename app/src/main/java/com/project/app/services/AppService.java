@@ -19,6 +19,8 @@ import com.project.app.models.Appointment;
 import com.project.app.models.Prescription;
 import com.project.app.models.Admin;
 import com.project.app.dtos.DoctorDTO;
+import com.project.app.utils.PasswordHasher;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -52,6 +54,8 @@ public class AppService {
 
     @Autowired
     private PrescriptionRepo prescriptionRepo;   
+
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     
 
@@ -121,6 +125,16 @@ public class AppService {
             doctor.setSpecialty(doctorDTO.getSpecialty());
         }
         doctor.setLicenseNumber(doctorDTO.getLicenseNumber());
+        
+        // Set password - hash it if provided, otherwise use a default
+        if (doctorDTO.getPassword() != null && !doctorDTO.getPassword().isEmpty()) {
+            // Hash the password before saving
+            doctor.setPassword(passwordEncoder.encode(doctorDTO.getPassword()));
+        } else {
+            // Set a default password if none provided
+            doctor.setPassword(passwordEncoder.encode("defaultPassword123"));
+        }
+        
         return doctorRepository.save(doctor);
     }
 

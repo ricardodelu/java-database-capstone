@@ -1,5 +1,6 @@
 // Import the apiService using a relative path
 import { apiService } from './services/apiService.js';
+import { doctorService } from './services/doctorServices.js';
 
 /**
  * Admin Dashboard Service - Manages the admin dashboard functionality
@@ -89,15 +90,11 @@ class AdminDashboardService {
                 modalForm: document.getElementById('addDoctorForm'),
                 closeModalBtn: document.querySelector('.close-modal'),
                 cancelBtn: document.querySelector('.cancel-btn'),
-                modal: document.getElementById('addDoctorModal'),
-                addDoctorForm: document.getElementById('addDoctorForm'),
-                modalTitle: document.querySelector('#addDoctorModal h2'),
-                closeBtn: document.querySelector('#addDoctorModal .close'),
-                cancelBtn: document.querySelector('#addDoctorModal .cancel-btn')
+                modalTitle: document.querySelector('#addDoctorModal h2')
             };
             
             // Check for missing critical elements
-            const requiredElements = ['searchBar', 'specialtyFilter', 'doctorList', 'addDoctorBtn', 'modal', 'addDoctorForm'];
+            const requiredElements = ['searchBar', 'specialtyFilter', 'doctorList', 'addDoctorBtn', 'modal', 'modalForm'];
             const missingElements = requiredElements
                 .filter(key => !this.elements[key])
                 .map(key => `#${key}`);
@@ -108,14 +105,28 @@ class AdminDashboardService {
             
             // Assign elements to instance properties for easier access
             Object.assign(this, this.elements);
+            console.log('Instance properties assigned:', {
+                doctorList: this.doctorList,
+                searchBar: this.searchBar,
+                addDoctorBtn: this.addDoctorBtn
+            });
             
             console.log('All required DOM elements found');
+            console.log('All elements:', this.elements);
+            console.log('Modal elements:', {
+                modal: this.elements.modal,
+                closeModalBtn: this.elements.closeModalBtn,
+                cancelBtn: this.elements.cancelBtn,
+                modalForm: this.elements.modalForm
+            });
             
             // Initialize event listeners
             this.initializeEventListeners();
             
             // Set up modal event listeners
+            console.log('Setting up modal listeners...');
             this._setupModalListeners();
+            console.log('Modal listeners setup complete');
             
             // Load initial data
             await this.loadDoctors();
@@ -126,6 +137,74 @@ class AdminDashboardService {
         } catch (error) {
             console.error('Error initializing AdminDashboardService:', error);
             this.showError(`Failed to initialize dashboard: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Close the modal
+     */
+    closeModal() {
+        const { modal } = this.elements;
+        if (!modal) return;
+        
+        // Hide modal
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        
+        // Remove show class
+        modal.classList.remove('show');
+        this.isModalOpen = false;
+        
+        // Reset form
+        if (this.elements.modalForm) {
+            this.elements.modalForm.reset();
+        }
+        
+        // Clear editing state
+        this.editingDoctorId = null;
+    }
+    
+    /**
+     * Populate the form with doctor data
+     * @param {Object} doctor - The doctor data
+     * @private
+     */
+    populateForm(doctor) {
+        const form = this.elements.modalForm;
+        if (!form) {
+            console.error('Form not found in populateForm');
+            return;
+        }
+        
+        console.log('Populating form with doctor data:', doctor);
+        console.log('Form element:', form);
+        
+        // Populate form fields
+        const fields = {
+            'id': doctor.id,
+            'name': doctor.name,
+            'email': doctor.email,
+            'specialty': doctor.specialty,
+            'phoneNumber': doctor.phoneNumber,
+            'licenseNumber': doctor.licenseNumber
+        };
+        
+        Object.entries(fields).forEach(([fieldName, value]) => {
+            const field = form.querySelector(`[name="${fieldName}"]`);
+            console.log(`Setting field ${fieldName} to value:`, value, 'Field found:', !!field, 'Field element:', field);
+            if (field && value) {
+                field.value = value;
+                console.log(`Successfully set ${fieldName} to:`, field.value);
+            } else {
+                console.warn(`Could not set ${fieldName}: field=${!!field}, value=${value}`);
+            }
+        });
+        
+        // Handle password field for edit mode
+        const passwordField = form.querySelector('#password');
+        if (passwordField) {
+            passwordField.required = false;
+            passwordField.placeholder = 'Leave blank to keep current password';
         }
     }
     
@@ -153,16 +232,23 @@ class AdminDashboardService {
             modalTitle.textContent = title;
         }
         
-        // Reset form
+        // Reset form only for add mode, not for edit mode
         if (this.elements.modalForm) {
-            this.elements.modalForm.reset();
+            const isEditMode = this.editingDoctorId !== null;
+            console.log('Showing modal in edit mode:', isEditMode);
+            
+            if (!isEditMode) {
+                this.elements.modalForm.reset();
+                console.log('Form reset for add mode');
+            } else {
+                console.log('Form not reset for edit mode');
+            }
             
             // Show/hide password field based on add/edit mode
             const passwordField = this.elements.modalForm.querySelector('#password');
             const passwordRequired = this.elements.modalForm.querySelector('#passwordRequired');
             
             if (passwordField && passwordRequired) {
-                const isEditMode = this.editingDoctorId !== null;
                 passwordField.required = !isEditMode;
                 passwordRequired.style.display = isEditMode ? 'none' : 'inline';
                 
@@ -199,21 +285,46 @@ class AdminDashboardService {
     openModalForAdd() {
         this.editingDoctorId = null;
         this._showModal('Add New Doctor');
+        
+        // Explicitly clear the id field for new doctor
+        const idField = this.elements.modalForm?.querySelector('#doctorId');
+        if (idField) {
+            idField.value = '';
+        }
     }
     
     /**
      * Open modal for editing a doctor
-     * @param {string} doctorId - The ID of the doctor to edit
+     * @param {Object} doctor - The doctor object to edit
      */
-    openModalForEdit(doctorId) {
-        this.editingDoctorId = doctorId;
+    openModalForEdit(doctor) {
+        console.log('openModalForEdit called with doctor:', doctor);
+        this.editingDoctorId = doctor.id;
+        console.log('Set editingDoctorId to:', this.editingDoctorId);
         this._showModal('Edit Doctor');
         
-        // Find the doctor and populate the form
-        const doctor = this.doctors.find(d => d.id === doctorId);
-        if (doctor) {
+        // Populate the form with doctor data immediately after modal is shown
+        // Try multiple times to ensure the form is populated
+        const populateForm = () => {
+            console.log('Attempting to populate form...');
             this.populateForm(doctor);
-        }
+            
+            // Check if phone number was set, if not try again
+            const phoneField = this.elements.modalForm?.querySelector('[name="phoneNumber"]');
+            if (phoneField && !phoneField.value && doctor.phoneNumber) {
+                console.log('Phone number not set, retrying...');
+                setTimeout(() => {
+                    phoneField.value = doctor.phoneNumber;
+                    console.log('Phone number set on retry:', phoneField.value);
+                }, 50);
+            }
+        };
+        
+        // Initial population
+        setTimeout(populateForm, 100);
+        
+        // Backup population in case the first one fails
+        setTimeout(populateForm, 200);
     }
     
     /**
@@ -223,31 +334,52 @@ class AdminDashboardService {
     _setupModalListeners() {
         const { modal, closeModalBtn, cancelBtn, modalForm } = this.elements;
         
+        console.log('Setting up modal listeners with elements:', {
+            modal: !!modal,
+            closeModalBtn: !!closeModalBtn,
+            cancelBtn: !!cancelBtn,
+            modalForm: !!modalForm
+        });
+        
         // Close modal when clicking the close button
         if (closeModalBtn) {
-            closeModalBtn.addEventListener('click', () => this.closeModal());
+            closeModalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Close button clicked');
+                this.closeModal();
+            });
+        } else {
+            console.warn('Close modal button not found');
         }
         
         // Close modal when clicking the cancel button
         if (cancelBtn) {
             cancelBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('Cancel button clicked');
                 this.closeModal();
             });
+        } else {
+            console.warn('Cancel button not found');
         }
         
         // Close modal when clicking outside the modal content
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
+                    console.log('Modal background clicked');
                     this.closeModal();
                 }
             });
+        } else {
+            console.warn('Modal element not found');
         }
         
         // Handle form submission
         if (modalForm) {
             modalForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        } else {
+            console.warn('Modal form not found');
         }
     }
     
@@ -265,6 +397,17 @@ class AdminDashboardService {
                 element: this.elements.addDoctorBtn,
                 type: 'click',
                 handler: this.openModalForAdd
+            });
+        }
+        
+        // Add logout button functionality
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+            this.eventListeners.push({
+                element: logoutBtn,
+                type: 'click',
+                handler: this.handleLogout
             });
         }
         
@@ -320,141 +463,87 @@ class AdminDashboardService {
         this.eventListeners = [];
     }
     
-    /**
-     * Initialize event listeners
-     */
-    initializeEventListeners() {
-        // Remove any existing event listeners first
-        this.cleanup();
-        
-        // Add new event listeners
-        if (this.elements.addDoctorBtn) {
-            this.elements.addDoctorBtn.addEventListener('click', () => this.openModalForAdd());
-            this.eventListeners.push({
-                element: this.elements.addDoctorBtn,
-                type: 'click',
-                handler: this.openModalForAdd
-            });
-        }
-    
-    if (this.elements.searchBar) {
-        this.elements.searchBar.addEventListener('input', () => this.filterDoctors());
-        this.eventListeners.push({
-            element: this.elements.searchBar,
-            type: 'input',
-            handler: this.filterDoctors
-        });
-    }
-    
-    if (this.elements.specialtyFilter) {
-        this.elements.specialtyFilter.addEventListener('change', () => this.filterDoctors());
-        this.eventListeners.push({
-            element: this.elements.specialtyFilter,
-            type: 'change',
-            handler: this.filterDoctors
-        });
-    }
-    
-    if (this.elements.timeFilter) {
-        this.elements.timeFilter.addEventListener('change', () => this.filterDoctors());
-        this.eventListeners.push({
-            element: this.elements.timeFilter,
-            type: 'change',
-            handler: this.filterDoctors
-        });
-    }
-    
-    // Add keyboard event listener for Escape key to close modal
-    document.addEventListener('keydown', this._handleKeyDown);
-    this.eventListeners.push({
-        element: document,
-        type: 'keydown',
-        handler: this._handleKeyDown
-    });
-}
 
-/**
- * Clean up all event listeners
- */
-cleanup() {
-    console.log('Cleaning up AdminDashboardService event listeners');
-    this.eventListeners.forEach(({ element, event, handler }) => {
-        element.removeEventListener(event, handler);
-    });
-    this.eventListeners = [];
-    this.initialized = false;
-}
 
 /**
  * Load doctors from the API
  */
-async loadDoctors() {
-    try {
-        this.showLoading();
-        
-        // Use the apiService to make the request to the protected endpoint
-        // Note: The base URL is already handled by apiService, so we don't need to include /api here
-        const response = await apiService.get('/admin/dashboard');
-        
-        if (response && response.data) {
-            // The response should contain the dashboard data
-            console.log('Dashboard data loaded:', response.data);
+    async loadDoctors() {
+        try {
+            this.showLoading();
             
-            // If there are doctors in the response, update the UI
-            if (response.data.doctors) {
-                this.doctors = Array.isArray(response.data.doctors) ? response.data.doctors : [];
+            // Get specialty filter value - use both possible references
+            const specialtyFilter = this.elements.specialtyFilter || this.specialtyFilter;
+            const specialty = specialtyFilter ? specialtyFilter.value : '';
+            
+            console.log('Specialty filter value:', specialty);
+            
+            // Build URL with specialty parameter if selected
+            let url = '/api/admin/dashboard';
+            if (specialty && specialty !== '') {
+                url += `?specialty=${encodeURIComponent(specialty)}`;
+            }
+            
+            console.log('Loading doctors from URL:', url);
+            
+            // Use the apiService to make the request to the protected endpoint
+            const response = await apiService.get(url);
+            
+            if (response && response.doctors) {
+                // The response should contain the dashboard data
+                console.log('Dashboard data loaded:', response);
+                
+                // If there are doctors in the response, update the UI
+                this.doctors = Array.isArray(response.doctors) ? response.doctors : [];
                 this.renderDoctors();
+                
+                // Update other dashboard data as needed
+                // Example: this.updateDashboardStats(response.stats);
             } else {
                 // If no doctors array in the response, initialize with empty array
                 this.doctors = [];
                 this.renderDoctors();
             }
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
             
-            // Update other dashboard data as needed
-            // Example: this.updateDashboardStats(response.data.stats);
+            // Show appropriate error message
+            let errorMessage = 'Failed to load dashboard data. ';
             
-        } else {
-            throw new Error('Invalid response format from server');
-        }
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        
-        // Show appropriate error message
-        let errorMessage = 'Failed to load dashboard data. ';
-        
-        if (error.response) {
-            if (error.response.status === 401) {
-                errorMessage += 'You are not authorized to view this page. ';
-                // Redirect to login if not authenticated
-                window.location.href = '/login';
-            } else if (error.response.status === 403) {
-                errorMessage += 'You do not have permission to access this resource. ';
-                // Redirect to home if not authorized
-                window.location.href = '/';
-            } else if (error.response.data && error.response.data.message) {
-                errorMessage += error.response.data.message;
+            if (error.response) {
+                if (error.response.status === 401) {
+                    errorMessage += 'You are not authorized to view this page. ';
+                    // Redirect to login if not authenticated
+                    window.location.href = '/login';
+                } else if (error.response.status === 403) {
+                    errorMessage += 'You do not have permission to access this resource. ';
+                    // Redirect to home if not authorized
+                    window.location.href = '/';
+                } else if (error.response.data && error.response.data.message) {
+                    errorMessage += error.response.data.message;
+                }
+            } else if (error.request) {
+                errorMessage += 'No response from server. Please check your connection.';
+            } else {
+                errorMessage += error.message || 'An unknown error occurred.';
             }
-        } else if (error.request) {
-            errorMessage += 'No response from server. Please check your connection.';
-        } else {
-            errorMessage += error.message || 'An unknown error occurred.';
+            
+            this.showError(errorMessage);
+            throw new Error(errorMessage);
         }
-        
-        this.showError(errorMessage);
-        throw new Error(errorMessage);
     }
-}
     /**
      * Filter doctors based on search and filter criteria
      */
     filterDoctors() {
-        const searchTerm = this.searchBar.value.toLowerCase();
-        const specialty = this.specialtyFilter.value;
-        const time = this.timeFilter.value;
+        // Use consistent element references
+        const searchBar = this.elements.searchBar || this.searchBar;
+        const timeFilter = this.elements.timeFilter || this.timeFilter;
+        
+        const searchTerm = searchBar ? searchBar.value.toLowerCase() : '';
+        const time = timeFilter ? timeFilter.value : '';
 
-        // The specialty filter is now handled by the backend via loadDoctors.
-        // We only need to trigger a reload if the specialty changes.
-        // The event listener for specialtyFilter should now call loadDoctors directly.
+        console.log('Filtering doctors with search term:', searchTerm, 'and time filter:', time);
 
         let filteredDoctors = this.doctors.filter(doctor => {
             return doctor.name.toLowerCase().includes(searchTerm);
@@ -467,6 +556,7 @@ async loadDoctors() {
             filteredDoctors.sort((a, b) => a.id - b.id);
         }
 
+        console.log('Filtered doctors count:', filteredDoctors.length);
         this.renderDoctors(filteredDoctors);
     }
     
@@ -475,6 +565,11 @@ async loadDoctors() {
      * @param {Array} doctors - The list of doctors to render
      */
     renderDoctors(doctors = this.doctors) {
+        if (!this.doctorList) {
+            console.error('doctorList element not found');
+            return;
+        }
+        
         this.doctorList.innerHTML = '';
         
         if (doctors.length === 0) {
@@ -528,6 +623,7 @@ async loadDoctors() {
             editBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('Edit button clicked for doctor:', doctor);
                 this.openModalForEdit(doctor);
             });
         }
@@ -555,14 +651,20 @@ async loadDoctors() {
      */
     async handleFormSubmit(e) {
         e.preventDefault();
+        console.log('Form submission started');
         
         const form = e.target;
         const formData = new FormData(form);
         const doctorData = Object.fromEntries(formData.entries());
         
+        console.log('Form data:', doctorData);
+        
         // Validate form data
         const { isValid, errors } = this._validateFormData(doctorData);
+        console.log('Validation result:', { isValid, errors });
+        
         if (!isValid) {
+            console.log('Form validation failed:', errors);
             this._showFormErrors(errors);
             return;
         }
@@ -571,12 +673,14 @@ async loadDoctors() {
             this.showLoading();
             
             if (this.editingDoctorId) {
-                // Update existing doctor
-                await apiService.updateDoctor(this.editingDoctorId, doctorData);
+                // Update existing doctor - remove id and password fields from request body
+                const { id, password, ...updateData } = doctorData;
+                console.log('Update data (without id and password):', updateData);
+                await doctorService.updateDoctor(this.editingDoctorId, updateData);
                 this.showSuccess('Doctor updated successfully');
             } else {
                 // Add new doctor
-                await apiService.addDoctor(doctorData);
+                await doctorService.saveDoctor(doctorData);
                 this.showSuccess('Doctor added successfully');
             }
             
@@ -590,6 +694,114 @@ async loadDoctors() {
         } finally {
             this.hideLoading();
         }
+    }
+    
+    /**
+     * Handle doctor deletion
+     * @param {number} doctorId - The ID of the doctor to delete
+     */
+    async handleDeleteDoctor(doctorId) {
+        try {
+            this.showLoading();
+            const result = await doctorService.deleteDoctor(doctorId);
+            
+            if (result.success) {
+                this.showSuccess('Doctor deleted successfully');
+                await this.loadDoctors(); // Refresh the list
+            } else {
+                this.showError(result.message || 'Failed to delete doctor');
+            }
+        } catch (error) {
+            console.error('Error deleting doctor:', error);
+            this.showError(error.message || 'Failed to delete doctor');
+        } finally {
+            this.hideLoading();
+        }
+    }
+    
+    /**
+     * Validate form data
+     * @param {Object} data - The form data to validate
+     * @returns {Object} Validation result with isValid and errors
+     * @private
+     */
+    _validateFormData(data) {
+        const errors = [];
+        
+        console.log('Validating form data:', data);
+        console.log('Phone number length:', data.phoneNumber ? data.phoneNumber.length : 'undefined');
+        
+        if (!data.name || data.name.trim().length < 2) {
+            errors.push('Name must be at least 2 characters long');
+        }
+        
+        if (!data.email || !this._isValidEmail(data.email)) {
+            errors.push('Please enter a valid email address');
+        }
+        
+        if (!data.specialty || data.specialty.trim().length === 0) {
+            errors.push('Please select a specialty');
+        }
+        
+        if (!data.phoneNumber || data.phoneNumber.trim().length !== 10) {
+            errors.push('Please enter a valid 10-digit phone number');
+            console.log('Phone validation failed:', {
+                hasPhoneNumber: !!data.phoneNumber,
+                phoneLength: data.phoneNumber ? data.phoneNumber.length : 0,
+                phoneValue: data.phoneNumber
+            });
+        }
+        
+        if (!data.licenseNumber || data.licenseNumber.trim().length === 0) {
+            errors.push('License number is required');
+        }
+        
+        // Password is only required for new doctors
+        if (!this.editingDoctorId && (!data.password || data.password.length < 8)) {
+            errors.push('Password must be at least 8 characters long');
+        }
+        
+        console.log('Validation complete. Errors:', errors);
+        
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+    
+    /**
+     * Check if email is valid
+     * @param {string} email - Email to validate
+     * @returns {boolean} True if valid, false otherwise
+     * @private
+     */
+    _isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    /**
+     * Show form validation errors
+     * @param {Array} errors - Array of error messages
+     * @private
+     */
+    _showFormErrors(errors) {
+        // Clear any existing error messages
+        const existingErrors = this.modal.querySelectorAll('.form-error');
+        existingErrors.forEach(error => error.remove());
+        
+        // Show new error messages
+        errors.forEach(error => {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'form-error';
+            errorDiv.textContent = error;
+            errorDiv.style.color = 'red';
+            errorDiv.style.fontSize = '0.875rem';
+            errorDiv.style.marginTop = '0.25rem';
+            
+            // Insert after the form
+            this.modal.querySelector('form').appendChild(errorDiv);
+        });
     }
     
     /**
@@ -676,6 +888,26 @@ showSuccess(message) {
         } else {
             console.log('Success:', message);
         }
+    }
+    
+    /**
+     * Handle logout functionality
+     */
+    handleLogout() {
+        console.log('Logout requested');
+        
+        // Clear authentication data
+        if (typeof authService !== 'undefined') {
+            authService.clearAuth();
+        } else {
+            // Fallback: clear localStorage
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('userEmail');
+        }
+        
+        // Redirect to main page
+        window.location.href = '/';
     }
 }
 

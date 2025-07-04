@@ -96,6 +96,10 @@ class ApiService {
             ...(options.headers || {})
         };
 
+        console.log('POST request to:', url);
+        console.log('POST request data:', data);
+        console.log('POST request headers:', headers);
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -105,6 +109,11 @@ class ApiService {
                 body: JSON.stringify(data),
                 ...options
             });
+            console.log('POST response status:', response.status);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('POST response error body:', errorText);
+            }
             return this.handleResponse(response);
         } catch (error) {
             console.error('POST request failed:', error);
@@ -127,6 +136,10 @@ class ApiService {
             ...(options.headers || {})
         };
 
+        console.log('PUT request to:', url);
+        console.log('PUT request data:', data);
+        console.log('PUT request headers:', headers);
+
         try {
             const response = await fetch(url, {
                 method: 'PUT',
@@ -136,6 +149,11 @@ class ApiService {
                 body: JSON.stringify(data),
                 ...options
             });
+            console.log('PUT response status:', response.status);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('PUT response error body:', errorText);
+            }
             return this.handleResponse(response);
         } catch (error) {
             console.error('PUT request failed:', error);
@@ -170,6 +188,21 @@ class ApiService {
             console.error('DELETE request failed:', error);
             throw error;
         }
+    }
+
+    /**
+     * Check if user is authenticated and has the required role
+     * @param {string} requiredRole - e.g. 'ADMIN', 'DOCTOR', 'PATIENT'
+     * @returns {boolean} True if authenticated and has role, false otherwise
+     */
+    checkAuth(requiredRole) {
+        const token = authService.getToken();
+        const user = authService.getCurrentUser();
+        if (!token || !user || !user.roles) return false;
+        if (!requiredRole) return true; // Just check authentication
+        // Normalize role string
+        const roleStr = requiredRole.startsWith('ROLE_') ? requiredRole : `ROLE_${requiredRole}`;
+        return user.roles.includes(roleStr);
     }
 }
 

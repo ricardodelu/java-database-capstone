@@ -3,120 +3,222 @@
  * Renders a dynamic header based on user role and authentication state
  */
 
-// Main function to render the header
-function renderHeader() {
-    // Don't show header on homepage
-    if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("token");
-        return;
+// Header Component
+class Header {
+    constructor() {
+        this.headerElement = null;
     }
 
-    const role = localStorage.getItem("userRole");
-    const token = localStorage.getItem("token");
-    const headerDiv = document.getElementById('header');
-    
-    if (!headerDiv) return;
+    async render(pageTitle = 'Clinic Management System', showLogout = false) {
+        const headerHtml = `
+            <header class="modern-header">
+                <div class="header-container">
+                    <div class="header-left">
+                        <div class="logo-container">
+                            <img src="/assets/images/logo/logo.png" alt="Clinic Logo" class="logo">
+                            <span class="logo-text">ClinicMS</span>
+                        </div>
+                        <h1 class="page-title">${pageTitle}</h1>
+                    </div>
+                    <div class="header-right">
+                        ${showLogout ? `
+                            <button id="logoutBtn" class="logout-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </header>
+        `;
 
-    // Validate session
-    if ((role === "loggedPatient" || role === "admin" || role === "doctor") && !token) {
-        localStorage.removeItem("userRole");
-        alert("Session expired or invalid login. Please log in again.");
-        window.location.href = "/";
-        return;
+        return headerHtml;
     }
 
-    let headerContent = `
-        <nav class="header-nav">
-            <div class="logo">
-                <a href="/">ClinicMS</a>
-            </div>
-            <div class="nav-links">
-    `;
+    async mount(containerId = 'header', pageTitle = 'Clinic Management System', showLogout = false) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`Header container with id '${containerId}' not found`);
+            return;
+        }
 
-    // Add navigation links based on role
-    switch(role) {
-        case 'admin':
-            headerContent += `
-                <a href="/admin/dashboard" class="nav-link">Dashboard</a>
-                <button id="addDocBtn" class="btn btn-primary">Add Doctor</button>
-                <button id="logoutBtn" class="btn btn-outline">Logout</button>
-            `;
-            break;
-            
-        case 'doctor':
-            headerContent += `
-                <a href="/doctor/dashboard" class="nav-link">Home</a>
-                <button id="logoutBtn" class="btn btn-outline">Logout</button>
-            `;
-            break;
-            
-        case 'loggedPatient':
-            headerContent += `
-                <a href="/patient/dashboard" class="nav-link">Home</a>
-                <a href="/patient/appointments" class="nav-link">My Appointments</a>
-                <button id="logoutBtn" class="btn btn-outline">Logout</button>
-            `;
-            break;
-            
-        default: // patient (not logged in)
-            headerContent += `
-                <a href="/login" class="btn btn-outline">Login</a>
-                <a href="/signup" class="btn btn-primary">Sign Up</a>
-            `;
+        const headerHtml = await this.render(pageTitle, showLogout);
+        container.innerHTML = headerHtml;
+        this.headerElement = container;
+
+        // Add logout functionality if needed
+        if (showLogout) {
+            this.setupLogout();
+        }
+
+        // Add CSS if not already present
+        this.addStyles();
     }
 
-    headerContent += `
-            </div>
-        </nav>
-    `;
+    setupLogout() {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+    }
 
-    headerDiv.innerHTML = headerContent;
-    attachHeaderButtonListeners();
+    handleLogout() {
+        console.log('Logout requested from header');
+        
+        // Clear authentication data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userEmail');
+        sessionStorage.removeItem('selectedRole');
+        
+        // Redirect to main page
+        window.location.href = '/';
+    }
+
+    addStyles() {
+        // Check if styles are already added
+        if (document.getElementById('modern-header-styles')) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = 'modern-header-styles';
+        style.textContent = `
+            .modern-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 1rem 0;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .header-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 2rem;
+            }
+
+            .logo-container {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .logo {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                background: white;
+                padding: 4px;
+            }
+
+            .logo-text {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: white;
+            }
+
+            .page-title {
+                font-size: 1.75rem;
+                font-weight: 600;
+                margin: 0;
+                color: white;
+            }
+
+            .header-right {
+                display: flex;
+                align-items: center;
+            }
+
+            .logout-btn {
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 0.75rem 1.5rem;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+            }
+
+            .logout-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.5);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .logout-btn i {
+                font-size: 1rem;
+            }
+
+            @media (max-width: 768px) {
+                .header-container {
+                    padding: 0 1rem;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .header-left {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                    text-align: center;
+                }
+
+                .page-title {
+                    font-size: 1.5rem;
+                }
+
+                .logo-text {
+                    font-size: 1.25rem;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
 }
 
-// Attach event listeners to header buttons
-function attachHeaderButtonListeners() {
-    // Logout button
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
+// Export the Header class
+export { Header };
+
+// Auto-initialize if this script is loaded directly
+if (typeof document !== 'undefined') {
+    const header = new Header();
     
-    // Add Doctor button (admin only)
-    const addDocBtn = document.getElementById('addDocBtn');
-    if (addDocBtn) {
-        addDocBtn.addEventListener('click', () => openModal('addDoctor'));
-    }
-}
-
-// Handle logout functionality
-function handleLogout() {
-    const role = localStorage.getItem("userRole");
-    
-    if (role === 'loggedPatient') {
-        // For patients, keep the role but remove token
-        localStorage.removeItem("token");
-        localStorage.setItem("userRole", "patient");
-        window.location.href = "/patient/dashboard";
-    } else {
-        // For admins and doctors, clear everything
-        localStorage.removeItem("token");
-        localStorage.removeItem("userRole");
-        window.location.href = "/";
-    }
-}
-
-// Initialize header when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    renderHeader();
-});
-
-// Export functions for testing and manual triggering
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        renderHeader,
-        handleLogout,
-        attachHeaderButtonListeners
-    };
+    // Auto-mount if header container exists
+    document.addEventListener('DOMContentLoaded', () => {
+        const headerContainer = document.getElementById('header');
+        if (headerContainer) {
+            // Check if we're on a dashboard page (show logout)
+            const isDashboard = window.location.pathname.includes('/dashboard') || 
+                              window.location.pathname.includes('/admin') ||
+                              window.location.pathname.includes('/doctor') ||
+                              window.location.pathname.includes('/patient');
+            
+            const pageTitle = isDashboard ? 
+                (window.location.pathname.includes('/admin') ? 'Admin Dashboard' :
+                 window.location.pathname.includes('/doctor') ? 'Doctor Dashboard' :
+                 window.location.pathname.includes('/patient') ? 'Patient Dashboard' : 'Dashboard') :
+                'Clinic Management System';
+            
+            header.mount('header', pageTitle, isDashboard);
+        }
+    });
 }

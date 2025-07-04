@@ -149,11 +149,11 @@
                 const user = authService.getCurrentUser();
                 if (user && user.roles) {
                     if (user.roles.includes('ROLE_ADMIN')) {
-                        window.location.href = '/admin/dashboard.html';
+                        window.location.href = '/admin/dashboard';
                     } else if (user.roles.includes('ROLE_DOCTOR')) {
-                        window.location.href = '/doctor/dashboard.html';
+                        window.location.href = '/doctor/dashboard';
                     } else if (user.roles.includes('ROLE_PATIENT')) {
-                        window.location.href = '/patient/dashboard.html';
+                        window.location.href = '/patient/dashboard';
                     }
                 }
             }
@@ -182,7 +182,7 @@
                     };
                     console.log('Attempting login with data:', loginData);
                     
-                    const response = await apiService.post('/api/auth/login', loginData)
+                    const response = await apiService.post('/api/auth/signin', loginData)
                         .catch(error => {
                             console.error('Login API error:', error);
                             console.error('Error details:', {
@@ -194,21 +194,25 @@
                         });
 
                     // Store the token and user data
-                    if (response.token && response.user) {
-                        authService.setAuth(response.token, response.user);
+                    if (response.token && response.username && response.roles) {
+                        const user = {
+                            username: response.username,
+                            roles: Array.isArray(response.roles) ? response.roles : []
+                        };
+                        authService.setAuth(response.token, user);
                         
                         // Clear the selected role from sessionStorage
                         sessionStorage.removeItem('selectedRole');
                         
                         // Redirect based on user role
-                        if (authService.isAdmin()) {
-                            window.location.href = '/admin/dashboard.html';
-                        } else if (response.user.roles && response.user.roles.includes('ROLE_DOCTOR')) {
-                            window.location.href = '/doctor/dashboard.html';
-                        } else if (response.user.roles && response.user.roles.includes('ROLE_PATIENT')) {
-                            window.location.href = '/patient/dashboard.html';
+                        if (user.roles.includes('ROLE_ADMIN')) {
+                            window.location.href = '/admin/dashboard';
+                        } else if (user.roles.includes('ROLE_DOCTOR')) {
+                            window.location.href = '/doctor/dashboard';
+                        } else if (user.roles.includes('ROLE_PATIENT')) {
+                            window.location.href = '/patient/dashboard';
                         } else {
-                            window.location.href = '/dashboard.html';
+                            window.location.href = '/dashboard';
                         }
                     } else {
                         throw new Error('Invalid response from server');

@@ -1,6 +1,6 @@
 import { apiService } from './apiService.js';
 
-const DOCTOR_API = '/doctors';
+const DOCTOR_API = '/api/admin/doctors';
 
 class DoctorService {
     async getAllDoctors() {
@@ -39,7 +39,10 @@ class DoctorService {
 
     async updateDoctor(doctorId, doctorData) {
         try {
-            return await apiService.put(`${DOCTOR_API}/${doctorId}`, doctorData);
+            console.log('DoctorService.updateDoctor called with:', { doctorId, doctorData });
+            const result = await apiService.put(`${DOCTOR_API}/${doctorId}`, doctorData);
+            console.log('DoctorService.updateDoctor result:', result);
+            return result;
         } catch (error) {
             console.error('Error updating doctor:', error);
             throw error;

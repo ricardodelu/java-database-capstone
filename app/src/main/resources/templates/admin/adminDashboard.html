@@ -33,14 +33,16 @@
     <div class="container">
         <div class="wrapper">
             <!-- Header -->
-            <header id="header" class="dashboard-header">
-                <h1>Admin Dashboard</h1>
-                <button id="addDoctorBtn" class="adminBtn">
-                    <i class="fas fa-plus"></i> Add New Doctor
-                </button>
-            </header>
+            <div id="header"></div>
             
             <main class="main-content">
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <button id="addDoctorBtn" class="adminBtn">
+                        <i class="fas fa-plus"></i> Add New Doctor
+                    </button>
+                </div>
+                
                 <!-- Search and Filter Section -->
                 <div class="search-container">
                     <input type="text" id="searchBar" placeholder="Search by doctor name" class="search-input">
@@ -49,11 +51,11 @@
                 <div class="filter-section">
                     <select id="specialtyFilter" class="filter-select">
                         <option value="">All Specialties</option>
-                        <option value="cardiology">Cardiology</option>
-                        <option value="neurology">Neurology</option>
-                        <option value="pediatrics">Pediatrics</option>
-                        <option value="orthopedics">Orthopedics</option>
-                        <option value="dermatology">Dermatology</option>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Dermatology">Dermatology</option>
                     </select>
                     
                     <select id="timeFilter" class="filter-select">
@@ -123,8 +125,8 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="phone">Phone Number *</label>
-                    <input type="tel" id="phone" name="phone" required class="form-control">
+                    <label for="phoneNumber">Phone Number *</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" required class="form-control">
                 </div>
                 
                 <div class="form-group">
@@ -160,6 +162,12 @@
     <!-- Application Scripts -->
     <script type="module" src="/js/services/apiService.js"></script>
     <script type="module" src="/js/services/authService.js"></script>
+    
+    <!-- Import authService for logout functionality -->
+    <script type="module">
+        import { authService } from '/js/services/authService.js';
+        window.authService = authService;
+    </script>
     
     <!-- Initialize the dashboard -->
     <script type="module">
