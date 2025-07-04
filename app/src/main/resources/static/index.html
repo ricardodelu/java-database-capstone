@@ -34,6 +34,19 @@
                         <button id="doctorBtn" class="role-btn" onclick="selectRole('doctor')">Doctor</button>
                         <button id="patientBtn" class="role-btn" onclick="selectRole('patient')">Patient</button>
                     </div>
+                    
+                    <!-- JWT Test Section (for development only) -->
+                    <div class="jwt-test-section" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
+                        <h3 style="margin-bottom: 1rem; color: #555;">JWT Test Tools</h3>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button id="jwtTestBtn" class="jwt-test-btn" 
+                                    style="background-color: #4CAF50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;"
+                                    onclick="testJwtAuth()">
+                                Test JWT Authentication
+                            </button>
+                            <div id="jwtTestResult" style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -51,19 +64,90 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="/js/util.js"></script>
-    <script type="module" src="/js/render.js"></script>
+    <!-- Load global functions first -->
+    <script>
+        // Global functions
+        function selectRole(role) {
+            console.log('Role selected:', role);
+            // Store the selected role in sessionStorage
+            sessionStorage.setItem('selectedRole', role);
+            
+            // Redirect based on role
+            switch(role) {
+                case 'admin':
+                    window.location.href = '/admin/dashboard';
+                    break;
+                case 'doctor':
+                    window.location.href = '/doctor/dashboard';
+                    break;
+                case 'patient':
+                    window.location.href = '/patient/dashboard';
+                    break;
+                default:
+                    console.error('Unknown role:', role);
+            }
+        }
+        
+        // JWT Test Function
+        async function testJwtAuth() {
+            const resultDiv = document.getElementById('jwtTestResult');
+            if (!resultDiv) {
+                console.error('jwtTestResult element not found');
+                return;
+            }
+            
+            resultDiv.textContent = 'Testing JWT authentication...';
+            resultDiv.style.color = '#666';
+            
+            try {
+                const response = await fetch('/api/auth/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = 'JWT test successful! Token received.';
+                    resultDiv.style.color = 'green';
+                    console.log('JWT Token:', data.token);
+                } else {
+                    const error = await response.text();
+                    resultDiv.textContent = `JWT test failed: ${response.status} ${response.statusText} - ${error}`;
+                    resultDiv.style.color = 'red';
+                }
+            } catch (error) {
+                resultDiv.textContent = `JWT test error: ${error.message}`;
+                resultDiv.style.color = 'red';
+                console.error('JWT test error:', error);
+            }
+        }
+        
+        // Initialize role buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleButtons = document.querySelectorAll('.role-btn');
+            roleButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const role = e.target.id.replace('Btn', '');
+                    selectRole(role);
+                });
+            });
+            
+            console.log('Global scripts initialized');
+        });
+    </script>
+    
+    <!-- Load modules -->
+    <script type="module" src="/js/main.js"></script>
     <script type="module" src="/js/components/header.js"></script>
     <script type="module" src="/js/components/footer.js"></script>
     <script type="module" src="/js/services/index.js"></script>
-    <script type="module" src="/js/main.js"></script>
-    <script>
-    // Global function for role selection
-    function selectRole(role) {
-        if (window.app && typeof window.app.handleRoleSelection === 'function') {
-            window.app.handleRoleSelection(role);
-        } else {
-            console.error('App not initialized or handleRoleSelection not found');
+            resultDiv.style.color = '#d32f2f';
         }
     }
     </script>

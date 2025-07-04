@@ -1,4 +1,5 @@
-import { apiService } from '/js/services/apiService.js';
+// Import the apiService using a relative path
+import { apiService } from './services/apiService.js';
 
 /**
  * Admin Dashboard Service - Manages the admin dashboard functionality
@@ -69,6 +70,9 @@ class AdminDashboardService {
         }
     }
     
+    /**
+     * Initialize the admin dashboard
+     */
     async initialize() {
         // Prevent multiple initializations
         if (this.initialized) {
@@ -82,6 +86,7 @@ class AdminDashboardService {
             // Check authentication before proceeding
             if (!apiService.checkAuth('ADMIN')) {
                 console.log('User not authenticated or missing admin role');
+                window.location.href = '/login';
                 return;
             }
             
@@ -98,6 +103,10 @@ class AdminDashboardService {
                 timeFilter: document.getElementById('timeFilter'),
                 doctorList: document.getElementById('doctorList'),
                 addDoctorBtn: document.getElementById('addDoctorBtn'),
+                modal: document.getElementById('addDoctorModal'),
+                modalForm: document.getElementById('addDoctorForm'),
+                closeModalBtn: document.querySelector('.close-modal'),
+                cancelBtn: document.querySelector('.cancel-btn'),
                 modal: document.getElementById('addDoctorModal'),
                 addDoctorForm: document.getElementById('addDoctorForm'),
                 modalTitle: document.querySelector('#addDoctorModal h2'),
@@ -120,28 +129,207 @@ class AdminDashboardService {
             
             console.log('All required DOM elements found');
             
-            // Initialize the dashboard
+            // Initialize event listeners
             this.initializeEventListeners();
+            
+            // Set up modal event listeners
+            this._setupModalListeners();
+            
+            // Load initial data
             await this.loadDoctors();
             
-            // Mark as initialized
             this.initialized = true;
-            console.log('AdminDashboardService initialization complete');
+            console.log('AdminDashboardService initialized successfully');
             
         } catch (error) {
             console.error('Error initializing AdminDashboardService:', error);
             this.showError(`Failed to initialize dashboard: ${error.message}`);
         }
     }
-
-    // Add event listener with cleanup tracking
-    _addEventListener(element, event, handler) {
-        if (!element) return;
-        element.addEventListener(event, handler);
-        this.eventListeners.push({ element, event, handler });
+    
+    /**
+     * Handle keyboard events
+     * @param {KeyboardEvent} e - The keyboard event
+     * @private
+     */
+    _handleKeyDown(e) {
+        if (e.key === 'Escape' && this.isModalOpen) {
+            this.closeModal();
+        }
     }
     
-    // Clean up all event listeners
+    /**
+     * Show the modal with a title
+     * @param {string} title - The modal title
+     * @private
+     */
+    _showModal(title) {
+        const { modal, modalTitle } = this.elements;
+        if (!modal) return;
+        
+        if (modalTitle) {
+            modalTitle.textContent = title;
+        }
+        
+        // Reset form
+        if (this.elements.modalForm) {
+            this.elements.modalForm.reset();
+            
+            // Show/hide password field based on add/edit mode
+            const passwordField = this.elements.modalForm.querySelector('#password');
+            const passwordRequired = this.elements.modalForm.querySelector('#passwordRequired');
+            
+            if (passwordField && passwordRequired) {
+                const isEditMode = this.editingDoctorId !== null;
+                passwordField.required = !isEditMode;
+                passwordRequired.style.display = isEditMode ? 'none' : 'inline';
+                
+                // Add event listener to password field to toggle required attribute
+                if (isEditMode) {
+                    passwordField.placeholder = 'Leave blank to keep current password';
+                } else {
+                    passwordField.placeholder = 'Enter password';
+                }
+            }
+        }
+        
+        // Show modal
+        document.body.style.overflow = 'hidden';
+        modal.style.display = 'block';
+        
+        // Trigger reflow to enable animation
+        void modal.offsetWidth;
+        
+        // Add show class for animation
+        modal.classList.add('show');
+        this.isModalOpen = true;
+        
+        // Set focus to first form field
+        const firstInput = modal.querySelector('input, select, textarea');
+        if (firstInput) {
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            this.isModalOpen = false;
+            this.editingDoctorId = null;
+        }, 300);
+    }
+    
+    /**
+     * Open modal for adding a new doctor
+     */
+    openModalForAdd() {
+        this.editingDoctorId = null;
+        this._showModal('Add New Doctor');
+    }
+    
+    /**
+     * Open modal for editing a doctor
+     * @param {string} doctorId - The ID of the doctor to edit
+     */
+    openModalForEdit(doctorId) {
+        this.editingDoctorId = doctorId;
+        this._showModal('Edit Doctor');
+        
+        // Find the doctor and populate the form
+        const doctor = this.doctors.find(d => d.id === doctorId);
+        if (doctor) {
+            this.populateForm(doctor);
+        }
+    }
+    
+    /**
+     * Set up modal event listeners
+     * @private
+     */
+    _setupModalListeners() {
+        const { modal, closeModalBtn, cancelBtn, modalForm } = this.elements;
+        
+        // Close modal when clicking the close button
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => this.closeModal());
+        }
+        
+        // Close modal when clicking the cancel button
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.closeModal();
+            });
+        }
+        
+        // Close modal when clicking outside the modal content
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeModal();
+                }
+            });
+        }
+        
+        // Handle form submission
+        if (modalForm) {
+            modalForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        }
+    }
+    
+    /**
+     * Initialize event listeners
+     */
+    initializeEventListeners() {
+        // Remove any existing event listeners first
+        this.cleanup();
+        
+        // Add new event listeners
+        if (this.elements.addDoctorBtn) {
+            this.elements.addDoctorBtn.addEventListener('click', () => this.openModalForAdd());
+            this.eventListeners.push({
+                element: this.elements.addDoctorBtn,
+                type: 'click',
+                handler: this.openModalForAdd
+            });
+        }
+        
+        if (this.elements.searchBar) {
+            this.elements.searchBar.addEventListener('input', () => this.filterDoctors());
+            this.eventListeners.push({
+                element: this.elements.searchBar,
+                type: 'input',
+                handler: this.filterDoctors
+            });
+        }
+        
+        if (this.elements.specialtyFilter) {
+            this.elements.specialtyFilter.addEventListener('change', () => this.filterDoctors());
+            this.eventListeners.push({
+                element: this.elements.specialtyFilter,
+                type: 'change',
+                handler: this.filterDoctors
+            });
+        }
+        
+        if (this.elements.timeFilter) {
+            this.elements.timeFilter.addEventListener('change', () => this.filterDoctors());
+            this.eventListeners.push({
+                element: this.elements.timeFilter,
+                type: 'change',
+                handler: this.filterDoctors
+            });
+        }
+        
+        // Add keyboard event listener for Escape key to close modal
+        document.addEventListener('keydown', this._handleKeyDown);
+        this.eventListeners.push({
+            element: document,
+            type: 'keydown',
+            handler: this._handleKeyDown
+        });
+    }
+    
+    /**
+     * Clean up all event listeners
+     */
     cleanup() {
         console.log('Cleaning up AdminDashboardService event listeners');
         this.eventListeners.forEach(({ element, event, handler }) => {
@@ -151,45 +339,10 @@ class AdminDashboardService {
         this.initialized = false;
     }
     
-    initializeEventListeners() {
-        // Clean up any existing listeners first
-        this.cleanup();
-        
-        console.log('Initializing event listeners');
-        
-        // Search and filter
-        this._addEventListener(this.searchBar, 'input', () => this.filterDoctors());
-        this._addEventListener(this.specialtyFilter, 'change', () => this.loadDoctors(this.specialtyFilter.value));
-        
-        if (this.timeFilter) {
-            this._addEventListener(this.timeFilter, 'change', () => this.filterDoctors());
-        }
-        
-        // Add Doctor button
-        console.log('Adding click listener to Add Doctor button');
-        this._addEventListener(this.addDoctorBtn, 'click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.openModalForAdd();
-        });
-        
-        // Form submission
-        this._addEventListener(this.addDoctorForm, 'submit', (e) => {
-            e.preventDefault();
-            this.handleFormSubmit(e);
-        });
-        
-        // Modal close button
-        if (this.closeBtn) {
-            this._addEventListener(this.closeBtn, 'click', () => this.closeModal());
-        }
-        
-        // Modal cancel button
-        if (this.cancelBtn) {
-            this._addEventListener(this.cancelBtn, 'click', () => this.closeModal());
-        }
-    }
-
+    /**
+     * Load doctors from the API
+     * @param {string} specialty - The specialty to filter by
+     */
     async loadDoctors(specialty = '') {
         this.showLoading();
         
@@ -215,7 +368,10 @@ class AdminDashboardService {
             this.hideLoading();
         }
     }
-
+    
+    /**
+     * Filter doctors based on search and filter criteria
+     */
     filterDoctors() {
         const searchTerm = this.searchBar.value.toLowerCase();
         const specialty = this.specialtyFilter.value;
@@ -238,21 +394,30 @@ class AdminDashboardService {
 
         this.renderDoctors(filteredDoctors);
     }
-
-    renderDoctors(doctorsToRender = this.doctors) {
+    
+    /**
+     * Render the list of doctors
+     * @param {Array} doctors - The list of doctors to render
+     */
+    renderDoctors(doctors = this.doctors) {
         this.doctorList.innerHTML = '';
         
-        if (doctorsToRender.length === 0) {
+        if (doctors.length === 0) {
             this.doctorList.innerHTML = `<div class="no-doctors"><p>No doctors found matching your criteria.</p></div>`;
             return;
         }
         
-        doctorsToRender.forEach(doctor => {
+        doctors.forEach(doctor => {
             const doctorCard = this.createDoctorCard(doctor);
             this.doctorList.appendChild(doctorCard);
         });
     }
-
+    
+    /**
+     * Create a doctor card element
+     * @param {Object} doctor - The doctor data
+     * @returns {HTMLElement} The doctor card element
+     */
     createDoctorCard(doctor) {
         console.log('Creating card for doctor:', doctor);
         const card = document.createElement('div');
@@ -304,86 +469,51 @@ class AdminDashboardService {
         
         return card;
     }
-
-    openModalForAdd() {
-        console.log('Opening modal for adding new doctor');
-        this.editingDoctorId = null;
-        
-        // Set modal title
-        if (this.modalTitle) {
-            this.modalTitle.textContent = 'Add New Doctor';
-        }
-        
-        // Reset form
-
-    const url = isEditing ? `/api/admin/doctors/${this.editingDoctorId}` : '/api/admin/doctors';
-    const method = isEditing ? 'PUT' : 'POST';
-
-    try {
-        if (this.editingDoctorId) {
-            // Update existing doctor
-            await apiService.put(`/admin/doctors/${this.editingDoctorId}`, doctorData);
-        } else {
-            // Add new doctor
-            await apiService.post('/admin/doctors', doctorData);
-        }
-        
-        this.closeModal();
-        this.loadDoctors(this.specialtyFilter.value);
-        this.showSuccess(`Doctor ${this.editingDoctorId ? 'updated' : 'added'} successfully!`);
-        
-    } catch (error) {
-        console.error('Error saving doctor:', error);
-        this.showError(error.message || 'Failed to save doctor. Please try again.');
-        
-        // If unauthorized, redirect to login
-        if (error.message.includes('401')) {
-            window.location.href = '/';
-        }
-    } finally {
-        this.hideLoading();
-    }
-}
-
-async handleDeleteDoctor(doctorId) {
-    if (!confirm('Are you sure you want to delete this doctor?')) {
-        return;
-    }
     
-    try {
-        const response = await fetch(`/api/admin/doctors/${doctorId}`, {
-            method: 'DELETE'
-        });
+    /**
+     * Handle form submission
+     * @param {Event} e - The form submission event
+     */
+    /**
+     * Handle form submission
+     * @param {Event} e - The form submission event
+     */
+    async handleFormSubmit(e) {
+        e.preventDefault();
         
-        if (!response.ok) {
-            throw new Error('Failed to delete doctor');
+        const form = e.target;
+        const formData = new FormData(form);
+        const doctorData = Object.fromEntries(formData.entries());
+        
+        // Validate form data
+        const { isValid, errors } = this._validateFormData(doctorData);
+        if (!isValid) {
+            this._showFormErrors(errors);
+            return;
         }
         
-        this.showSuccess('Doctor deleted successfully!');
-        await this.loadDoctors();
-    } catch (error) {
-        console.error('Error deleting doctor:', error);
-        this.showError('Failed to delete doctor. Please try again.');
-    }
-}
-
-closeModal() {
-    console.log('Closing modal');
-    if (this.modal) {
-        this.modal.style.display = 'none';
-        this.isModalOpen = false;
-        document.body.classList.remove('modal-open');
-        
-        // Reset form state
-        if (this.addDoctorForm) {
-            this.addDoctorForm.reset();
+        try {
+            this.showLoading();
             
-            // Clear any error messages
-            const errorElements = this.addDoctorForm.querySelectorAll('.error-message');
-            errorElements.forEach(el => el.textContent = '');
+            if (this.editingDoctorId) {
+                // Update existing doctor
+                await apiService.updateDoctor(this.editingDoctorId, doctorData);
+                this.showSuccess('Doctor updated successfully');
+            } else {
+                // Add new doctor
+                await apiService.addDoctor(doctorData);
+                this.showSuccess('Doctor added successfully');
+            }
             
-            const inputGroups = this.addDoctorForm.querySelectorAll('.form-group');
-            inputGroups.forEach(group => group.classList.remove('has-error'));
+            // Close modal and refresh the list
+            this.closeModal();
+            await this.loadDoctors();
+            
+        } catch (error) {
+            console.error('Error saving doctor:', error);
+            this.showError(error.message || 'Failed to save doctor');
+        } finally {
+            this.hideLoading();
         }
     }
 }
@@ -510,11 +640,9 @@ function initAdminDashboard() {
     }
 }
 
-// Initialize only if we're on the admin dashboard page
-if (document.getElementById('adminDashboard')) {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAdminDashboard);
-    } else {
-        initAdminDashboard();
-    }
+// Initialize the admin dashboard when the DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminDashboard);
+} else {
+    initAdminDashboard();
 }

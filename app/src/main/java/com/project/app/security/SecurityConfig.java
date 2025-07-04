@@ -58,7 +58,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // Public access to web pages and authentication endpoints
+                // Allow all static resources
                 .requestMatchers(
                     "/",
                     "/index.html",
@@ -66,37 +66,22 @@ public class SecurityConfig {
                     "/login.html",
                     "/unauthorized",
                     "/error",
-                    "/api/auth/**"
+                    "/api/auth/**",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**",
+                    "/assets/**",
+                    "/fonts/**",
+                    "/webjars/**",
+                    "/favicon.ico"
                 ).permitAll()
                 
-                // Admin dashboard access - requires authentication
+                // Admin endpoints
                 .requestMatchers(
                     "/admin",
                     "/admin/",
-                    "/admin/dashboard"
+                    "/admin/**"
                 ).hasRole("ADMIN")
-                
-                // Static resources - allow all static content
-                .requestMatchers(
-                    "/**/*.js",
-                    "/**/*.css",
-                    "/**/*.png",
-                    "/**/*.jpg",
-                    "/**/*.jpeg",
-                    "/**/*.gif",
-                    "/**/*.svg",
-                    "/**/*.ico",
-                    "/**/*.woff",
-                    "/**/*.woff2",
-                    "/**/*.ttf",
-                    "/**/*.eot",
-                    "/js/**",
-                    "/css/**",
-                    "/images/**",
-                    "/static/**",
-                    "/assets/**",
-                    "/fonts/**"
-                ).permitAll()
                 
                 // Common static files in root
                 .requestMatchers(

@@ -7,8 +7,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.resource.PathResourceResolver;
+import org.springframework.http.CacheControl;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableWebMvc
@@ -16,22 +19,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve all static resources from /static/
-        registry.addResourceHandler(
-                "/**"
-        ).addResourceLocations(
-                "classpath:/static/"
-        ).resourceChain(true)
-         .addResolver(new PathResourceResolver() {
-             @Override
-             protected Resource getResource(String resourcePath, Resource location) throws IOException {
-                 Resource requestedResource = location.createRelative(resourcePath);
-                 return requestedResource.exists() && requestedResource.isReadable() ? requestedResource
-                         : new ClassPathResource("/static/index.html");
-             }
-         });
-        
-        // Explicitly handle common static file patterns
+        // Serve static resources with proper MIME types and caching
         registry.addResourceHandler(
                 "/css/**",
                 "/js/**",
@@ -44,11 +32,36 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 "classpath:/static/images/",
                 "classpath:/static/fonts/",
                 "classpath:/static/assets/"
-        ).setCachePeriod(0); // No cache for development
+        ).setCacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic());
+        
+        // Handle root path and SPA routing
+        registry.addResourceHandler(
+                "/**"
+        ).addResourceLocations(
+                "classpath:/static/"
+        ).resourceChain(true)
+         .addResolver(new PathResourceResolver() {
+             @Override
+             protected Resource getResource(String resourcePath, Resource location) throws IOException {
+                 Resource requestedResource = location.createRelative(resourcePath);
+                 if (requestedResource.exists() && requestedResource.isReadable()) {
+                     return requestedResource;
+                 }
+                 // For any other request, serve index.html for SPA routing
+                 return new ClassPathResource("/static/index.html");
+             }
+         });
         
         // WebJars for client-side libraries
         registry.addResourceHandler("/webjars/**")
                .addResourceLocations("classpath:/META-INF/resources/webjars/")
-               .setCachePeriod(0);
+               .setCacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic());
+    }
+    
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        // Map specific views
+        registry.addViewController("/").setViewName("forward:/index.html");
+        registry.addViewController("/admin").setViewName("forward:/admin/dashboard");
     }
 }
