@@ -128,13 +128,8 @@ class App {
     }
 
     handleRoleSelection(role) {
-        const modal = document.getElementById('loginModal');
-        if (modal) {
-            // Show login modal with role pre-selected
-            const roleInput = modal.querySelector('input[name="role"]');
-            if (roleInput) roleInput.value = role;
-            modal.style.display = 'block';
-        }
+        // Redirect to the login page with the selected role
+        window.location.href = `/login.html?role=${role}`;
     }
 
     async loadDashboard(role) {

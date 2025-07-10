@@ -5,65 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doctor Dashboard</title>
     <base href="/">
-    
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="/assets/images/logo/logo.png">
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- CSS -->
     <link rel="stylesheet" href="/assets/css/doctorDashboard.css">
     <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
 <body>
     <div class="container">
         <div class="wrapper">
             <!-- Header -->
             <div id="header"></div>
-            
+
             <main class="main-content">
-                <!-- Search Bar -->
-                <div class="search-container">
-                    <input type="text" id="searchBar" placeholder="Search patients by name or ID..." class="search-input" />
-                </div>
-                
-                <!-- Filter Section -->
-                <div class="filter-section">
-                    <button id="todayAppointments" class="filter-btn active">
-                        Today's Appointments
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <button id="addPatientBtn" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Patient
                     </button>
-                    <input type="date" id="dateFilter" class="date-input" />
                 </div>
-                
-                <!-- Patient Records Table -->
-                <div class="table-container">
-                    <table id="patientTable" class="patient-table">
-                        <thead>
-                            <tr>
-                                <th>Patient ID</th>
-                                <th>Name</th>
-                                <th>Phone</th>
-                                <th>Email</th>
-                                <th>Prescription</th>
-                            </tr>
-                        </thead>
-                        <tbody id="patientTableBody">
-                            <!-- Patient rows will be dynamically inserted here -->
-                        </tbody>
-                    </table>
-                    <div id="noPatients" class="no-records">
-                        No patient records found.
+
+                <!-- Search and Filter Section -->
+                <div class="search-container">
+                    <input type="text" id="searchBar" placeholder="Search by patient name or ID" class="search-input">
+                </div>
+                <div class="filter-section">
+                    <input type="date" id="dateFilter" class="date-input" />
+                    <select id="timeFilter" class="filter-select">
+                        <option value="">All Times</option>
+                        <option value="morning">Morning</option>
+                        <option value="afternoon">Afternoon</option>
+                        <option value="evening">Evening</option>
+                    </select>
+                </div>
+
+                <!-- Patient/Appointments Grid -->
+                <div id="content" class="content-area">
+                    <div id="patientList" class="doctor-grid">
+                        <!-- Patient/appointment cards will be loaded here by JavaScript -->
+                        <div class="loading">
+                            <p>Loading patients...</p>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Error Message Container -->
+                <div id="errorContainer" class="error-message" style="display: none;">
+                    <p>Error loading patients. Please try again later.</p>
+                </div>
             </main>
-            
+
             <!-- Footer -->
             <div id="footer"></div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Success/Error Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Add/Edit Patient Modal -->
+    <div id="addPatientModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modalTitle">Add New Patient</h2>
+            <form id="addPatientForm" class="patient-form">
+                <input type="hidden" id="patientId" name="id">
+                <div class="form-group">
+                    <label for="patientName">Full Name *</label>
+                    <input type="text" id="patientName" name="name" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="patientEmail">Email *</label>
+                    <input type="email" id="patientEmail" name="email" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="patientPhone">Phone Number *</label>
+                    <input type="tel" id="patientPhone" name="phoneNumber" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="patientAddress">Address</label>
+                    <input type="text" id="patientAddress" name="address" class="form-control">
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Patient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Appointment Modal -->
+    <div id="addAppointmentModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="appointmentModalTitle">Add Appointment</h2>
+            <form id="addAppointmentForm" class="appointment-form">
+                <input type="hidden" id="appointmentId" name="id">
+                <div class="form-group">
+                    <label for="appointmentPatient">Patient *</label>
+                    <select id="appointmentPatient" name="patientId" required class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentDate">Date *</label>
+                    <input type="date" id="appointmentDate" name="date" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="appointmentTime">Time *</label>
+                    <input type="time" id="appointmentTime" name="time" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="appointmentReason">Reason</label>
+                    <input type="text" id="appointmentReason" name="reason" class="form-control">
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Appointment</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -73,28 +135,23 @@
             <span class="close">&times;</span>
             <h2>Add Prescription</h2>
             <form id="prescriptionForm" class="prescription-form">
-                <input type="hidden" id="patientId" name="patientId">
-                
+                <input type="hidden" id="prescriptionPatientId" name="patientId">
                 <div class="form-group">
                     <label for="medication">Medication *</label>
                     <input type="text" id="medication" name="medication" required class="form-control">
                 </div>
-                
                 <div class="form-group">
                     <label for="dosage">Dosage *</label>
                     <input type="text" id="dosage" name="dosage" required class="form-control" placeholder="e.g., 500mg twice daily">
                 </div>
-                
                 <div class="form-group">
                     <label for="duration">Duration *</label>
                     <input type="text" id="duration" name="duration" required class="form-control" placeholder="e.g., 7 days">
                 </div>
-                
                 <div class="form-group">
                     <label for="notes">Notes</label>
                     <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Additional instructions or notes..."></textarea>
                 </div>
-                
                 <div class="form-buttons">
                     <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add Prescription</button>
@@ -103,45 +160,34 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="spinner"></div>
-    </div>
-    
-    <!-- Success/Error Toast -->
-    <div id="toast" class="toast"></div>
-    
-    <!-- Error Container -->
-    <div id="errorContainer" class="error-message" style="display: none;">
-        <p>Error loading appointments. Please try again later.</p>
-    </div>
-
     <!-- Application Scripts -->
-    <script type="module" src="/js/services/apiService.js"></script>
-    <script type="module" src="/js/services/authService.js"></script>
-    
-    <!-- Import authService for logout functionality -->
+    <script type="module" src="/js/services/apiService.js?v=1"></script>
+    <script type="module" src="/js/services/authService.js?v=1"></script>
+    <script type="module" src="/js/components/header.js?v=1"></script>
+    <script type="module" src="/js/components/footer.js?v=1"></script>
     <script type="module">
-        import { authService } from '/js/services/authService.js';
+        import { authService } from '/js/services/authService.js?v=1';
         window.authService = authService;
     </script>
-    
-    <!-- Initialize the dashboard -->
     <script type="module">
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                // Initialize header and footer
+                const { Header } = await import('/js/components/header.js?v=1');
+                const { Footer } = await import('/js/components/footer.js?v=1');
+                const header = new Header();
+                const footer = new Footer();
+                await header.mount('header', 'Doctor Dashboard', true);
+                await footer.mount('footer');
                 // Import the DoctorDashboardService
-                const { DoctorDashboardService } = await import('/js/doctorDashboard.js');
+                const { DoctorDashboardService } = await import('/js/doctorDashboard.js?v=' + Date.now());
                 console.log('Initializing DoctorDashboardService...');
-                
                 // Get the singleton instance
                 const dashboardService = DoctorDashboardService.getInstance();
                 console.log('DoctorDashboardService initialized');
-                
                 // Load appointments data
                 await dashboardService.loadAppointments();
                 console.log('Appointments data loaded');
-                
             } catch (error) {
                 console.error('Error initializing doctor dashboard:', error);
                 // Show error to user
@@ -150,7 +196,6 @@
                     errorContainer.textContent = 'Error initializing dashboard. Please refresh the page or contact support.';
                     errorContainer.style.display = 'block';
                 }
-                
                 // If unauthorized, redirect to login
                 if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                     window.location.href = '/login';

@@ -109,8 +109,14 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/webjars/**"
                 ).permitAll()
+                // Doctor endpoints - allow access to HTML templates, but protect API endpoints
+                .requestMatchers(
+                    "/doctor/dashboard"
+                ).permitAll()
+                .requestMatchers(
+                    "/api/doctors/**"
+                ).hasRole("DOCTOR")
                 // Role-based access control for dashboards (consolidated with above)
-                .requestMatchers("/doctor/dashboard").hasRole("DOCTOR")
                 .requestMatchers("/patient/dashboard").hasRole("PATIENT")
                 // All other requests require authentication
                 .anyRequest().authenticated()

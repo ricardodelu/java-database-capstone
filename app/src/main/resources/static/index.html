@@ -20,7 +20,6 @@
     <!-- CSS -->
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/index.css">
-    <link rel="stylesheet" href="/assets/css/modal.css">
 </head>
 <body>
     <div class="wrapper">
@@ -64,12 +63,7 @@
         <div id="footer"></div>
 
         <!-- Modal -->
-        <div id="modal" class="modal">
-            <div class="modal-content">
-                <span id="closeModal" class="close">&times;</span>
-                <div id="modal-body"></div>
-            </div>
-        </div>
+        <!-- Removed login modal as login is now handled by a dedicated page -->
     </div>
 
     <!-- Scripts -->
@@ -77,11 +71,15 @@
     <script>
         // Global functions
         function selectRole(role) {
+            role = role.trim().toLowerCase();
+            if (role.endsWith('btn')) {
+                role = role.replace('btn', '');
+            }
+            if (role === 'administrator') role = 'admin';
+            if (role === 'physician') role = 'doctor';
+            if (role === 'user') role = 'patient';
             console.log('Role selected:', role);
-            // Store the selected role in sessionStorage
             sessionStorage.setItem('selectedRole', role);
-            
-            // Redirect to login page with role parameter
             window.location.href = `/login.html?role=${role}`;
         }
         
@@ -92,7 +90,7 @@
             const roleButtons = document.querySelectorAll('.role-btn');
             roleButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
-                    const role = e.target.id.replace('Btn', '');
+                    let role = button.id.replace('Btn', '').toLowerCase();
                     selectRole(role);
                 });
             });

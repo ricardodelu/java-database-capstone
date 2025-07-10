@@ -39,21 +39,6 @@ public class DoctorController {
         }
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        try {
-            if (credentials.get("email") == null || credentials.get("password") == null) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Email and password are required"
-                ));
-            }
-            return doctorService.login(credentials);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Login failed: " + e.getMessage()));
-        }
-    }
-
     @GetMapping("/profile/{email}")
     public ResponseEntity<?> getProfile(@PathVariable String email) {
         try {
@@ -160,6 +145,16 @@ public class DoctorController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Failed to fetch schedule: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{email}/patients")
+    public ResponseEntity<?> getPatients(@PathVariable String email) {
+        try {
+            return doctorService.getDoctorPatients(email);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch patients: " + e.getMessage()));
         }
     }
 }

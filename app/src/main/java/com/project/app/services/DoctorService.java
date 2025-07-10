@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.project.app.dtos.PatientDTO;
 
 
 @Service
@@ -75,30 +76,6 @@ public class DoctorService {
         catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Registration failed: " + e.getMessage()));
-        }
-    }
-
-    public ResponseEntity<?> login(Map<String, String> credentials) {
-        try {
-            String email = credentials.get("email");
-            String password = credentials.get("password");
-
-            Doctor doctor = doctorRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
-
-            // Simple password check
-            if (!password.equals(doctor.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials"));
-            }
-
-            return ResponseEntity.ok(Map.of(
-                "doctor", convertToDTO(doctor)
-            ));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Login failed: " + e.getMessage()));
         }
     }
 
@@ -339,6 +316,24 @@ public class DoctorService {
         }
     }
 
+    public ResponseEntity<?> getDoctorPatients(String email) {
+        try {
+            Doctor doctor = doctorRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+            List<Appointment> appointments = appointmentRepo.findByDoctor_Id(doctor.getId());
+            Set<Patient> patients = appointments.stream()
+                .map(Appointment::getPatient)
+                .collect(Collectors.toSet());
+            List<PatientDTO> patientDTOs = patients.stream()
+                .map(this::convertToPatientDTO)
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(Map.of("patients", patientDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to fetch patients: " + e.getMessage()));
+        }
+    }
+
     private List<String> generateTimeSlots() {
         List<String> slots = new ArrayList<>();
         LocalTime start = LocalTime.of(9, 0); // 9 AM
@@ -403,5 +398,16 @@ public class DoctorService {
         dto.setPatientName(patient != null ? patient.getName() : "N/A");
         dto.setDoctorName(doctor != null ? doctor.getName() : "N/A");
         return dto;
+    }
+
+    private PatientDTO convertToPatientDTO(Patient patient) {
+        return new PatientDTO(
+            patient.getId(),
+            patient.getName(),
+            patient.getEmail(),
+            patient.getPhoneNumber(),
+            patient.getAddress(),
+            null // Do not expose password
+        );
     }
 }

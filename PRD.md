@@ -18,7 +18,7 @@ This document outlines the requirements for the Clinic Management System, a web-
 - **Authentication**: JWT (JSON Web Tokens)
 
 ### 2.2 Components
-1. **Admin Dashboard** (Partially Implemented)
+1. **Admin Dashboard** (Completed)
 2. **Doctor Dashboard** (Planned)
 3. **Patient Portal** (Planned)
 4. **Authentication Service** (Partially Implemented)
@@ -47,19 +47,19 @@ This document outlines the requirements for the Clinic Management System, a web-
 - Admin dashboard UI structure
 - Doctor management (CRUD operations)
 - Basic appointment scheduling
+- Admin dashboard functionality (now completed)
 
 ### 4.2 In Progress
-- Admin dashboard functionality
 - Doctor dashboard implementation
 - Patient portal development
 - Appointment management system
 
 ## 5. Pending Features & Known Issues
 ### 5.1 Admin Dashboard
-- [ ] Fix persistent 401 Unauthorized errors
-- [ ] Complete doctor management functionality
-- [ ] Add user role management
-- [ ] Implement reporting features
+- [x] Fix persistent 401 Unauthorized errors
+- [x] Complete doctor management functionality
+- [x] Add user role management
+- [x] Implement reporting features
 
 ### 5.2 Doctor Dashboard
 - [ ] Design and implement UI

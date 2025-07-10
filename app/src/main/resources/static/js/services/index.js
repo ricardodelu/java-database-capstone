@@ -16,12 +16,12 @@ class LoginHandler {
         });
 
         // Listen for modal form submissions
-        document.addEventListener('modalSubmit', this.handleLoginSubmit.bind(this));
+        // document.addEventListener('modalSubmit', this.handleLoginSubmit.bind(this)); // Removed as per edit hint
     }
 
     handleRoleSelection(role) {
-        console.log('Role selected:', role);
-        openModal(`${role}Login`);
+        // Redirect to the login page with the selected role
+        window.location.href = `/login.html?role=${role}`;
     }
 
     async handleLoginSubmit(event) {

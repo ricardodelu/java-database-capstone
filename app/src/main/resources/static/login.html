@@ -131,12 +131,21 @@
             // Get role from URL parameter or sessionStorage
             const urlParams = new URLSearchParams(window.location.search);
             let role = urlParams.get('role') || sessionStorage.getItem('selectedRole') || 'user';
-            
+            // Sanitize role
+            if (role) {
+                role = role.trim().toLowerCase();
+                if (role.endsWith('btn')) {
+                    role = role.replace('btn', '');
+                }
+                if (role.includes('admin')) role = 'admin';
+                else if (role.includes('doctor')) role = 'doctor';
+                else if (role.includes('patient')) role = 'patient';
+                else role = 'user';
+            }
             // Store the role in sessionStorage if it came from URL
             if (urlParams.get('role')) {
                 sessionStorage.setItem('selectedRole', role);
             }
-            
             // Update UI based on role
             const roleMessage = document.getElementById('loginRoleMessage');
             const roleTitle = role.charAt(0).toUpperCase() + role.slice(1);

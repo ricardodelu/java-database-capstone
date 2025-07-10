@@ -1,4 +1,5 @@
 import { authService } from '/js/services/authService.js';
+import config from '../config/config.js';
 
 /**
  * API Service for handling HTTP requests
@@ -6,8 +7,8 @@ import { authService } from '/js/services/authService.js';
  */
 class ApiService {
     constructor() {
-        // Base URL for API endpoints - can be configured based on environment
-        this.baseUrl = '';
+        // Set base URL for API endpoints from config
+        this.baseUrl = config.API_BASE_URL;
     }
 
     /**

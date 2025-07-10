@@ -85,8 +85,12 @@ html, body {
 .action-bar {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 20px;
-    padding: 0;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* Search Bar */
@@ -260,13 +264,68 @@ html, body {
 
 .adminBtn {
     color: #fff;
-    background-color: #007bff;
-    border-color: #007bff;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.adminBtn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.adminBtn:hover::before {
+    left: 100%;
 }
 
 .adminBtn:hover {
-    background-color: #0069d9;
-    border-color: #0062cc;
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    animation: none;
+}
+
+.adminBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.adminBtn i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.adminBtn:hover i {
+    transform: scale(1.1);
+}
+
+/* Add a pulsing animation for extra attention */
+@keyframes pulse {
+    0% { box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); }
+    50% { box-shadow: 0 4px 20px rgba(0, 123, 255, 0.5); }
+    100% { box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); }
+}
+
+.adminBtn {
+    animation: pulse 2s infinite;
 }
 
 /* Modal */
@@ -414,10 +473,6 @@ html, body {
 
 .btn-delete:hover {
     background-color: #ffcdd2;
-}
-
-    padding: 0;
-    line-height: 1;
 }
 
 .close:hover {
