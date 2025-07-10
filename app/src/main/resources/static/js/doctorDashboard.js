@@ -1,6 +1,6 @@
 // Doctor Dashboard Service - Modern implementation with JWT authentication
-import { apiService } from './services/apiService.js';
 import { authService } from './services/authService.js';
+import { apiService } from './services/apiService.js';
 
 class DoctorDashboardService {
     static instance = null;
@@ -54,9 +54,10 @@ class DoctorDashboardService {
             this.elements = {
                 searchBar: document.getElementById('searchBar'),
                 dateFilter: document.getElementById('dateFilter'),
-                timeFilter: document.getElementById('timeFilter'),
-                patientList: document.getElementById('patientList'),
-                addPatientBtn: document.getElementById('addPatientBtn'),
+                statusFilter: document.getElementById('statusFilter'),
+                todayAppointmentsBtn: document.getElementById('todayAppointmentsBtn'),
+                patientTable: document.getElementById('patientTable'),
+                patientTableBody: document.getElementById('patientTableBody'),
                 addPatientModal: document.getElementById('addPatientModal'),
                 addPatientForm: document.getElementById('addPatientForm'),
                 addAppointmentModal: document.getElementById('addAppointmentModal'),
@@ -79,7 +80,7 @@ class DoctorDashboardService {
     }
 
     checkRequiredElements() {
-        const required = ['searchBar', 'dateFilter', 'timeFilter', 'patientList', 'addPatientBtn', 'addPatientModal', 'addPatientForm', 'addAppointmentModal', 'addAppointmentForm', 'prescriptionModal', 'prescriptionForm', 'loadingOverlay', 'errorContainer', 'toast'];
+        const required = ['searchBar', 'dateFilter', 'statusFilter', 'todayAppointmentsBtn', 'patientTable', 'patientTableBody', 'addPatientModal', 'addPatientForm', 'addAppointmentModal', 'addAppointmentForm', 'prescriptionModal', 'prescriptionForm', 'loadingOverlay', 'errorContainer', 'toast'];
         const missing = required.filter(key => !this.elements[key]);
         if (missing.length > 0) {
             throw new Error(`Missing required DOM elements: ${missing.join(', ')}`);
@@ -88,16 +89,16 @@ class DoctorDashboardService {
 
     initializeEventListeners() {
         this.cleanup();
-        // Add patient
-        this.elements.addPatientBtn.addEventListener('click', () => this.openModalForAddPatient());
-        this.eventListeners.push({ element: this.elements.addPatientBtn, type: 'click', handler: this.openModalForAddPatient });
+        // Today's appointments button
+        this.elements.todayAppointmentsBtn.addEventListener('click', () => this.showTodaysAppointments());
+        this.eventListeners.push({ element: this.elements.todayAppointmentsBtn, type: 'click', handler: this.showTodaysAppointments });
         // Search/filter
         this.elements.searchBar.addEventListener('input', () => this.filterPatients());
         this.eventListeners.push({ element: this.elements.searchBar, type: 'input', handler: this.filterPatients });
         this.elements.dateFilter.addEventListener('change', () => this.filterPatients());
         this.eventListeners.push({ element: this.elements.dateFilter, type: 'change', handler: this.filterPatients });
-        this.elements.timeFilter.addEventListener('change', () => this.filterPatients());
-        this.eventListeners.push({ element: this.elements.timeFilter, type: 'change', handler: this.filterPatients });
+        this.elements.statusFilter.addEventListener('change', () => this.filterPatients());
+        this.eventListeners.push({ element: this.elements.statusFilter, type: 'change', handler: this.filterPatients });
         // Modal listeners
         this.setupModalListeners();
     }
@@ -151,59 +152,107 @@ class DoctorDashboardService {
         }
     }
 
+    showTodaysAppointments() {
+        const today = new Date().toISOString().split('T')[0];
+        this.elements.dateFilter.value = today;
+        this.filterPatients();
+        this.showSuccess('Showing today\'s appointments');
+    }
+
     filterPatients() {
         const searchTerm = this.elements.searchBar.value.toLowerCase();
         const date = this.elements.dateFilter.value;
-        const time = this.elements.timeFilter.value;
+        const status = this.elements.statusFilter.value;
+        
         let filtered = this.patients.filter(patient =>
             patient.name.toLowerCase().includes(searchTerm) ||
-            (patient.id && patient.id.toString().includes(searchTerm))
+            (patient.id && patient.id.toString().includes(searchTerm)) ||
+            (patient.email && patient.email.toLowerCase().includes(searchTerm)) ||
+            (patient.phoneNumber && patient.phoneNumber.includes(searchTerm))
         );
-        // Optionally filter by date/time if relevant
+        
+        // Filter by appointment date if date is selected
+        if (date) {
+            filtered = filtered.filter(patient => {
+                const patientAppointments = this.appointments.filter(apt => apt.patientId === patient.id);
+                return patientAppointments.some(apt => apt.date === date);
+            });
+        }
+        
+        // Filter by appointment status if status is selected
+        if (status) {
+            filtered = filtered.filter(patient => {
+                const patientAppointments = this.appointments.filter(apt => apt.patientId === patient.id);
+                return patientAppointments.some(apt => apt.status === status);
+            });
+        }
+        
         this.renderPatients(filtered);
     }
 
     renderPatients(patientsToRender) {
-        const list = this.elements.patientList;
-        list.innerHTML = '';
+        const tbody = this.elements.patientTableBody;
+        tbody.innerHTML = '';
+        
         if (!patientsToRender.length) {
-            list.innerHTML = '<div class="no-records">No patient records found.</div>';
+            tbody.innerHTML = '<tr><td colspan="6" class="noPatientRecord">No patient records found.</td></tr>';
             return;
         }
+        
         patientsToRender.forEach(patient => {
-            const card = this.createPatientCard(patient);
-            list.appendChild(card);
+            const row = this.createPatientRow(patient);
+            tbody.appendChild(row);
         });
     }
 
-    createPatientCard(patient) {
-        const card = document.createElement('div');
-        card.className = 'doctor-card';
-        card.innerHTML = `
-            <div class="doctor-header">
-                <h3 class="doctor-name">${patient.name}</h3>
-                <span class="doctor-id">ID: ${patient.id}</span>
-            </div>
-            <div class="doctor-body">
-                <p class="doctor-info"><i class="fas fa-envelope"></i> ${patient.email || 'No email'}</p>
-                <p class="doctor-info"><i class="fas fa-phone"></i> ${patient.phoneNumber || 'No phone'}</p>
-                <p class="doctor-info"><i class="fas fa-home"></i> ${patient.address || 'No address'}</p>
-            </div>
-            <div class="doctor-actions">
-                <button class="btn btn-edit edit-btn" data-id="${patient.id}"><i class="fas fa-edit"></i> Edit</button>
-                <button class="btn btn-delete delete-btn" data-id="${patient.id}"><i class="fas fa-trash"></i> Delete</button>
-                <button class="btn btn-primary add-appointment-btn" data-id="${patient.id}"><i class="fas fa-calendar-plus"></i> Add Appointment</button>
-            </div>
+    createPatientRow(patient) {
+        const row = document.createElement('tr');
+        
+        // Get patient's prescriptions
+        const prescriptions = this.getPatientPrescriptions(patient.id);
+        const prescriptionText = prescriptions.length > 0 
+            ? `${prescriptions.length} prescription(s)` 
+            : 'No prescriptions';
+        
+        row.innerHTML = `
+            <td data-label="Patient ID">${patient.id}</td>
+            <td data-label="Name">${patient.name}</td>
+            <td data-label="Phone">${patient.phoneNumber || 'N/A'}</td>
+            <td data-label="Email">${patient.email || 'N/A'}</td>
+            <td data-label="Prescription">${prescriptionText}</td>
+            <td data-label="Actions">
+                <div class="action-buttons">
+                    <button class="action-btn btn-view view-btn" data-id="${patient.id}">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="action-btn btn-edit edit-btn" data-id="${patient.id}">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="prescription-btn prescription-btn" data-id="${patient.id}">
+                        <i class="fas fa-pills"></i> Add Prescription
+                    </button>
+                </div>
+            </td>
         `;
-        card.querySelector('.edit-btn').addEventListener('click', () => this.openModalForEditPatient(patient));
-        card.querySelector('.delete-btn').addEventListener('click', () => this.deletePatient(patient.id));
-        card.querySelector('.add-appointment-btn').addEventListener('click', () => this.openModalForAddAppointment(patient));
-        return card;
+        
+        // Add event listeners
+        row.querySelector('.view-btn').addEventListener('click', () => this.viewPatient(patient));
+        row.querySelector('.edit-btn').addEventListener('click', () => this.openModalForEditPatient(patient));
+        row.querySelector('.prescription-btn').addEventListener('click', () => this.openModalForAddPrescription(patient));
+        
+        return row;
+    }
+
+    getPatientPrescriptions(patientId) {
+        // This would typically come from an API call
+        // For now, return empty array - you can implement this later
+        return [];
     }
 
     renderAppointments(appointmentsToRender) {
-        // Similar to renderPatients, but for appointments
-        // For brevity, not fully implemented here
+        // This method can be used to show appointments in a separate view
+        // For now, we're focusing on the patient table
+        console.log('Appointments loaded:', appointmentsToRender.length);
     }
 
     setupModalListeners() {
@@ -211,47 +260,54 @@ class DoctorDashboardService {
         // For brevity, not fully implemented here
     }
 
-    openModalForAddPatient() {
-        // Open add patient modal and reset form
+    viewPatient(patient) {
+        // Implement patient view functionality
+        console.log('Viewing patient:', patient);
+        this.showSuccess(`Viewing patient: ${patient.name}`);
     }
 
     openModalForEditPatient(patient) {
         // Open edit patient modal and populate form
+        console.log('Editing patient:', patient);
+        this.showSuccess(`Editing patient: ${patient.name}`);
     }
 
-    deletePatient(patientId) {
-        // Confirm and delete patient
+    openModalForAddPrescription(patient) {
+        // Open add prescription modal and set patient
+        console.log('Adding prescription for patient:', patient);
+        this.showSuccess(`Adding prescription for: ${patient.name}`);
     }
-
-    openModalForAddAppointment(patient) {
-        // Open add appointment modal and set patient
-    }
-
-    // exportData() method removed - no longer needed
 
     showLoading() {
-        this.elements.loadingOverlay.style.display = 'flex';
+        if (this.elements.loadingOverlay) {
+            this.elements.loadingOverlay.style.display = 'flex';
+        }
     }
 
     hideLoading() {
-        this.elements.loadingOverlay.style.display = 'none';
+        if (this.elements.loadingOverlay) {
+            this.elements.loadingOverlay.style.display = 'none';
+        }
     }
 
     showError(message) {
-        this.elements.errorContainer.textContent = message;
-        this.elements.errorContainer.style.display = 'block';
-        setTimeout(() => {
-            this.elements.errorContainer.style.display = 'none';
-        }, 5000);
+        if (this.elements.errorContainer) {
+            this.elements.errorContainer.textContent = message;
+            this.elements.errorContainer.style.display = 'block';
+            setTimeout(() => {
+                this.elements.errorContainer.style.display = 'none';
+            }, 5000);
+        }
     }
 
     showSuccess(message) {
-        this.elements.toast.textContent = message;
-        this.elements.toast.className = 'toast toast-success';
-        this.elements.toast.style.display = 'block';
-        setTimeout(() => {
-            this.elements.toast.style.display = 'none';
-        }, 3000);
+        if (this.elements.toast) {
+            this.elements.toast.textContent = message;
+            this.elements.toast.className = 'toast toast-success show';
+            setTimeout(() => {
+                this.elements.toast.classList.remove('show');
+            }, 3000);
+        }
     }
 }
 

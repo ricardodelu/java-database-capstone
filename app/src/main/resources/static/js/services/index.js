@@ -1,4 +1,4 @@
-import { openModal } from '../components/modals.js';
+// import { openModal } from '../components/modals.js'; // Commented out - file doesn't exist
 import { authService } from './authService.js';
 
 class LoginHandler {

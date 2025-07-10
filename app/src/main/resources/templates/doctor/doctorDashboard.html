@@ -6,6 +6,7 @@
     <title>Doctor Dashboard</title>
     <base href="/">
     <link rel="icon" type="image/png" href="/assets/images/logo/logo.png">
+    <link rel="stylesheet" href="/assets/css/adminDashboard.css">
     <link rel="stylesheet" href="/assets/css/doctorDashboard.css">
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,40 +18,50 @@
             <div id="header"></div>
 
             <main class="main-content">
-                <!-- Action Bar -->
-                <div class="action-bar">
-                    <button id="addPatientBtn" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Add Patient
-                    </button>
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <input type="text" id="searchBar" placeholder="Search patients..." class="search-input">
                 </div>
 
-                <!-- Search and Filter Section -->
-                <div class="search-container">
-                    <input type="text" id="searchBar" placeholder="Search by patient name or ID" class="search-input">
-                </div>
+                <!-- Filter Section -->
                 <div class="filter-section">
+                    <button id="todayAppointmentsBtn" class="btn btn-primary">
+                        <i class="fas fa-calendar-day"></i> Today's Appointments
+                    </button>
                     <input type="date" id="dateFilter" class="date-input" />
-                    <select id="timeFilter" class="filter-select">
-                        <option value="">All Times</option>
-                        <option value="morning">Morning</option>
-                        <option value="afternoon">Afternoon</option>
-                        <option value="evening">Evening</option>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
 
-                <!-- Patient/Appointments Grid -->
-                <div id="content" class="content-area">
-                    <div id="patientList" class="doctor-grid">
-                        <!-- Patient/appointment cards will be loaded here by JavaScript -->
-                        <div class="loading">
-                            <p>Loading patients...</p>
-                        </div>
-                    </div>
+                <!-- Patient Records Table -->
+                <div class="table-container">
+                    <table id="patientTable" class="patient-table">
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Prescription</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientTableBody">
+                            <!-- Patient rows will be populated dynamically -->
+                            <tr class="loading-row">
+                                <td colspan="6" class="loading">Loading patient records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Error Message Container -->
                 <div id="errorContainer" class="error-message" style="display: none;">
-                    <p>Error loading patients. Please try again later.</p>
+                    <p>Error loading patient records. Please try again later.</p>
                 </div>
             </main>
 
@@ -161,10 +172,14 @@
     </div>
 
     <!-- Application Scripts -->
-    <script type="module" src="/js/services/apiService.js?v=1"></script>
-    <script type="module" src="/js/services/authService.js?v=1"></script>
+    <script type="module" src="/js/render.js?v=1"></script>
+    <script type="module" src="/js/util.js?v=1"></script>
     <script type="module" src="/js/components/header.js?v=1"></script>
     <script type="module" src="/js/components/footer.js?v=1"></script>
+    <script type="module" src="/js/components/patientRows.js?v=1"></script>
+    <script type="module" src="/js/services/patientServices.js?v=1"></script>
+    <script type="module" src="/js/services/apiService.js?v=1"></script>
+    <script type="module" src="/js/services/authService.js?v=1"></script>
     <script type="module">
         import { authService } from '/js/services/authService.js?v=1';
         window.authService = authService;
@@ -179,15 +194,17 @@
                 const footer = new Footer();
                 await header.mount('header', 'Doctor Dashboard', true);
                 await footer.mount('footer');
+                
                 // Import the DoctorDashboardService
                 const { DoctorDashboardService } = await import('/js/doctorDashboard.js?v=' + Date.now());
                 console.log('Initializing DoctorDashboardService...');
+                
                 // Get the singleton instance
                 const dashboardService = DoctorDashboardService.getInstance();
                 console.log('DoctorDashboardService initialized');
-                // Load appointments data
-                await dashboardService.loadAppointments();
-                console.log('Appointments data loaded');
+                
+                // The service will handle its own initialization and data loading
+                console.log('Dashboard service ready');
             } catch (error) {
                 console.error('Error initializing doctor dashboard:', error);
                 // Show error to user
