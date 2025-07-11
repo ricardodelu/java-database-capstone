@@ -1,4 +1,6 @@
 /* Global styles */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
 :root {
     --primary-color: #007bff;
     --secondary-color: #6c757d;

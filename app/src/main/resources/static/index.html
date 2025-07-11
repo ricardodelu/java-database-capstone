@@ -9,65 +9,59 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/assets/images/logo/logo.png">
     
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
     <!-- CSS -->
-    <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <!-- JS links for utility with defer -->
+    <script src="/js/util.js" defer></script>
+    <script src="/js/render.js" defer></script>
+    
+    <!-- JS links for components -->
+    <script src="/js/components/header.js" defer></script>
+    <script src="/js/components/footer.js" defer></script>
 </head>
 <body>
-    <div class="wrapper">
-        <!-- Header -->
-        <div id="header"></div>
+    <div class="container">
+        <div class="wrapper">
+            <!-- Header -->
+            <div id="header"></div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="container">
-                <div class="hero-section">
-                    <div class="hero-content">
-                        <h1 class="hero-title">Welcome to ClinicMS</h1>
-                        <p class="hero-subtitle">Modern healthcare management system designed to streamline clinic operations and improve patient care.</p>
-                        
-                        <div class="role-selection">
-                            <h2>Select Your Role</h2>
-                            <div class="role-buttons">
-                                <button id="adminBtn" class="role-btn admin-role" onclick="selectRole('admin')">
-                                    <i class="fas fa-user-shield"></i>
-                                    <span>Administrator</span>
-                                    <small>Manage clinic operations</small>
-                                </button>
-                                <button id="doctorBtn" class="role-btn doctor-role" onclick="selectRole('doctor')">
-                                    <i class="fas fa-user-md"></i>
-                                    <span>Doctor</span>
-                                    <small>View patients & appointments</small>
-                                </button>
-                                <button id="patientBtn" class="role-btn patient-role" onclick="selectRole('patient')">
-                                    <i class="fas fa-user"></i>
-                                    <span>Patient</span>
-                                    <small>Book appointments & view records</small>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Main Content -->
+            <main class="main-content">
+                <h2>Select Your Role</h2>
+                <div class="role-buttons">
+                    <button id="adminBtn" class="role-btn" onclick="selectRole('admin')">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Administrator</span>
+                    </button>
+                    <button id="doctorBtn" class="role-btn" onclick="selectRole('doctor')">
+                        <i class="fas fa-user-md"></i>
+                        <span>Doctor</span>
+                    </button>
+                    <button id="patientBtn" class="role-btn" onclick="selectRole('patient')">
+                        <i class="fas fa-user"></i>
+                        <span>Patient</span>
+                    </button>
                 </div>
-            </div>
-        </main>
+            </main>
 
-        <!-- Footer -->
-        <div id="footer"></div>
-
-        <!-- Modal -->
-        <!-- Removed login modal as login is now handled by a dedicated page -->
+            <!-- Footer -->
+            <div id="footer"></div>
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <!-- Load global functions first -->
+    <!-- Modal -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <div id="modal-body">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Global functions -->
     <script>
         // Global functions
         function selectRole(role) {
@@ -79,30 +73,42 @@
             if (role === 'physician') role = 'doctor';
             if (role === 'user') role = 'patient';
             console.log('Role selected:', role);
-            sessionStorage.setItem('selectedRole', role);
+            
+            // Store the selected role in localStorage as per requirements
+            localStorage.setItem('selectedRole', role);
+            
+            // Navigate to login page with role parameter
             window.location.href = `/login.html?role=${role}`;
         }
         
-
-        
-        // Initialize role buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const roleButtons = document.querySelectorAll('.role-btn');
-            roleButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    let role = button.id.replace('Btn', '').toLowerCase();
-                    selectRole(role);
+        // Initialize role buttons and load header/footer
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Load header and footer
+                const { Header } = await import('/js/components/header.js');
+                const { Footer } = await import('/js/components/footer.js');
+                const header = new Header();
+                const footer = new Footer();
+                await header.mount('header', 'Clinic Management System', false);
+                await footer.mount('footer');
+                
+                // Initialize role buttons
+                const roleButtons = document.querySelectorAll('.role-btn');
+                roleButtons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        let role = button.id.replace('Btn', '').toLowerCase();
+                        selectRole(role);
+                    });
                 });
-            });
-            
-            console.log('Global scripts initialized');
+                
+                console.log('Global scripts initialized');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+            }
         });
     </script>
     
-    <!-- Load modules -->
-    <script type="module" src="/js/main.js"></script>
-    <script type="module" src="/js/components/header.js"></script>
-    <script type="module" src="/js/components/footer.js"></script>
-    <script type="module" src="/js/services/index.js"></script>
+    <!-- Service for role selection and modal behavior -->
+    <script type="module" src="/js/services/index.js" defer></script>
 </body>
 </html>

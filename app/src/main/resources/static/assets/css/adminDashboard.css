@@ -678,3 +678,130 @@ html, body {
     border-radius: 6px;
     margin: 20px 0;
 }
+
+/* Patient Section */
+.patient-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e9ecef;
+}
+
+.patient-section h2 {
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* Patient Table */
+.table-container {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.patient-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+.patient-table thead {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.patient-table th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+}
+
+.patient-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.patient-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.patient-table td {
+    padding: 12px;
+    font-size: 0.9rem;
+    color: #333;
+    vertical-align: middle;
+}
+
+.patient-table .loading {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Patient Action Buttons */
+.patient-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-add-prescription {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-add-prescription:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.btn-add-prescription i {
+    font-size: 0.7rem;
+}
+
+/* Prescription Form */
+.prescription-form .form-group {
+    margin-bottom: 20px;
+}
+
+.prescription-form textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .patient-table {
+        font-size: 0.8rem;
+    }
+    
+    .patient-table th,
+    .patient-table td {
+        padding: 8px 6px;
+    }
+    
+    .patient-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .btn-add-prescription {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+}
