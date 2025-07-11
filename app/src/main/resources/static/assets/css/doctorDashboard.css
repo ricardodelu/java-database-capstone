@@ -302,7 +302,9 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9999 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .modal-content {
@@ -314,6 +316,8 @@ html, body {
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .close-modal {

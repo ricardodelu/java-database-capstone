@@ -3,116 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prescription Test</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        .test-button {
-            background: #059669;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 10px;
-        }
-        .test-button:hover {
-            background: #047857;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 500px;
-        }
-        .close-modal {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .form-buttons {
-            text-align: right;
-            margin-top: 20px;
-        }
-        .btn {
-            padding: 8px 16px;
-            margin-left: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background: #007bff;
-            color: white;
-        }
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-    </style>
+    <title>Test Prescription Modal</title>
+    <link rel="stylesheet" href="/assets/css/doctorDashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <h1>Prescription Modal Test</h1>
-    
-    <button class="test-button" onclick="testPrescriptionModal()">
-        Test Prescription Modal
-    </button>
-    
-    <div id="prescriptionModal" class="modal">
+    <div class="container">
+        <h1>Test Prescription Modal</h1>
+        
+        <button id="testButton" class="prescription-btn">
+            <i class="fas fa-pills"></i> Test Add Prescription
+        </button>
+        
+        <div id="testOutput"></div>
+    </div>
+
+    <!-- Prescription Modal -->
+    <div id="prescriptionModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <h2>Add Prescription</h2>
-            <form id="prescriptionForm">
+            <form id="prescriptionForm" class="prescription-form">
                 <input type="hidden" id="prescriptionPatientId" name="patientId" value="1">
-                
                 <div class="form-group">
                     <label for="medication">Medication *</label>
                     <input type="text" id="medication" name="medication" required class="form-control">
                 </div>
-                
                 <div class="form-group">
                     <label for="dosage">Dosage *</label>
                     <input type="text" id="dosage" name="dosage" required class="form-control" placeholder="e.g., 500mg twice daily">
                 </div>
-                
                 <div class="form-group">
                     <label for="duration">Duration *</label>
                     <input type="text" id="duration" name="duration" required class="form-control" placeholder="e.g., 7 days">
                 </div>
-                
                 <div class="form-group">
                     <label for="notes">Notes</label>
                     <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Additional instructions or notes..."></textarea>
                 </div>
-                
                 <div class="form-buttons">
                     <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add Prescription</button>
@@ -122,75 +50,67 @@
     </div>
 
     <script>
-        function testPrescriptionModal() {
-            console.log('[TEST] Opening prescription modal...');
-            const modal = document.getElementById('prescriptionModal');
-            if (modal) {
-                modal.style.display = 'block';
-                document.body.style.overflow = 'hidden';
-                console.log('[TEST] Modal opened successfully');
-            } else {
-                console.error('[TEST] Modal not found');
-            }
-        }
-
-        // Modal event listeners
         document.addEventListener('DOMContentLoaded', function() {
+            const testButton = document.getElementById('testButton');
+            const testOutput = document.getElementById('testOutput');
             const modal = document.getElementById('prescriptionModal');
-            const form = document.getElementById('prescriptionForm');
             const closeButtons = document.querySelectorAll('.close-modal, .cancel-btn');
+            const form = document.getElementById('prescriptionForm');
             
-            console.log('[TEST] Setting up modal listeners...');
-            console.log('[TEST] Modal found:', !!modal);
-            console.log('[TEST] Form found:', !!form);
-            console.log('[TEST] Close buttons found:', closeButtons.length);
+            console.log('Test page loaded');
+            console.log('Test button:', testButton);
+            console.log('Modal:', modal);
             
-            // Close modal when clicking close button or cancel
+            // Test button click
+            testButton.addEventListener('click', function(e) {
+                console.log('Test button clicked!');
+                testOutput.innerHTML = '<p>Button clicked at: ' + new Date().toLocaleTimeString() + '</p>';
+                
+                // Try to open modal
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                    console.log('Modal opened');
+                    testOutput.innerHTML += '<p>Modal opened successfully</p>';
+                } else {
+                    console.error('Modal not found');
+                    testOutput.innerHTML += '<p>ERROR: Modal not found</p>';
+                }
+            });
+            
+            // Close modal
             closeButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    console.log('[TEST] Close button clicked');
-                    if (modal) {
-                        modal.style.display = 'none';
-                        document.body.style.overflow = '';
-                        console.log('[TEST] Modal closed');
-                    }
+                button.addEventListener('click', function() {
+                    console.log('Close button clicked');
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                    testOutput.innerHTML += '<p>Modal closed</p>';
                 });
             });
             
             // Close modal when clicking outside
-            if (modal) {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        console.log('[TEST] Modal background clicked');
-                        modal.style.display = 'none';
-                        document.body.style.overflow = '';
-                        console.log('[TEST] Modal closed via background click');
-                    }
-                });
-            }
-            
-            // Handle form submission
-            if (form) {
-                form.addEventListener('submit', (e) => {
-                    console.log('[TEST] Form submitted');
-                    e.preventDefault();
-                    
-                    const formData = new FormData(form);
-                    const data = Object.fromEntries(formData.entries());
-                    console.log('[TEST] Form data:', data);
-                    
-                    // Simulate API call
-                    alert('Prescription data: ' + JSON.stringify(data, null, 2));
-                    
-                    // Close modal
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
                     modal.style.display = 'none';
                     document.body.style.overflow = '';
-                    form.reset();
-                });
-                console.log('[TEST] Form submit listener added');
-            }
+                    testOutput.innerHTML += '<p>Modal closed (outside click)</p>';
+                }
+            });
             
-            console.log('[TEST] Modal listeners setup complete');
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Form submitted');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                console.log('Form data:', data);
+                testOutput.innerHTML += '<p>Form submitted with data: ' + JSON.stringify(data) + '</p>';
+                
+                // Close modal
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+                form.reset();
+            });
         });
     </script>
 </body>

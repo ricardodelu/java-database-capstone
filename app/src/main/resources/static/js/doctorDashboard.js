@@ -223,14 +223,20 @@ class DoctorDashboardService {
             </td>
         `;
         
+        console.log('[DoctorDashboard] Created row for patient:', patient.id, 'Row HTML:', row.innerHTML);
+        
         // Add event listener for prescription button
         const prescriptionBtn = row.querySelector('.prescription-btn');
         if (prescriptionBtn) {
+            console.log('[DoctorDashboard] Adding click listener to prescription button for patient:', patient.id);
             prescriptionBtn.addEventListener('click', (e) => {
+                console.log('[DoctorDashboard] Prescription button clicked for patient:', patient.id);
                 e.preventDefault();
                 e.stopPropagation();
                 this.openModalForAddPrescription(patient);
             });
+        } else {
+            console.error('[DoctorDashboard] Prescription button not found for patient:', patient.id);
         }
         
         return row;
@@ -293,16 +299,34 @@ class DoctorDashboardService {
     }
 
     openModalForAddPrescription(patient) {
+        console.log('[DoctorDashboard] openModalForAddPrescription called for patient:', patient);
+        
         // Set the patient ID in the hidden field
         const patientIdField = document.getElementById('prescriptionPatientId');
         if (patientIdField) {
             patientIdField.value = patient.id;
+            console.log('[DoctorDashboard] Set patient ID in hidden field:', patient.id);
+        } else {
+            console.error('[DoctorDashboard] prescriptionPatientId field not found');
         }
+        
         // Show the prescription modal
         const modal = document.getElementById('prescriptionModal');
+        console.log('[DoctorDashboard] Modal element found:', !!modal);
         if (modal) {
+            console.log('[DoctorDashboard] Modal HTML:', modal.outerHTML);
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+            console.log('[DoctorDashboard] Modal opened successfully');
+            console.log('[DoctorDashboard] Modal display style:', modal.style.display);
+            console.log('[DoctorDashboard] Modal computed display:', window.getComputedStyle(modal).display);
+            console.log('[DoctorDashboard] Modal z-index:', window.getComputedStyle(modal).zIndex);
+            console.log('[DoctorDashboard] Modal position:', window.getComputedStyle(modal).position);
+            console.log('[DoctorDashboard] Modal visibility:', window.getComputedStyle(modal).visibility);
+            console.log('[DoctorDashboard] Modal opacity:', window.getComputedStyle(modal).opacity);
+        } else {
+            console.error('[DoctorDashboard] prescriptionModal not found');
+            console.log('[DoctorDashboard] All elements with id containing "modal":', document.querySelectorAll('[id*="modal"]'));
         }
     }
 
@@ -345,15 +369,24 @@ class DoctorDashboardService {
         const prescriptionData = Object.fromEntries(formData.entries());
         try {
             this.showLoading();
+            console.log('[DoctorDashboard] Submitting prescription data:', prescriptionData);
+            
             // Note: Doctor ID is handled by the backend based on the authenticated user
             // Add prescription date if not provided
             if (!prescriptionData.prescriptionDate) {
                 prescriptionData.prescriptionDate = new Date().toISOString().split('T')[0];
             }
+            
             // Use prescription service to save prescription
             const response = await prescriptionService.addPrescription(prescriptionData);
+            console.log('[DoctorDashboard] Prescription submission response:', response);
+            
             if (response) {
-                this.showSuccess('Prescription added successfully');
+                // Show detailed success message
+                const successMessage = `Prescription added successfully for patient ID: ${prescriptionData.patientId}`;
+                this.showSuccess(successMessage);
+                console.log('[DoctorDashboard] Prescription added successfully:', successMessage);
+                
                 // Close modal
                 const modal = document.getElementById('prescriptionModal');
                 if (modal) {
@@ -364,6 +397,7 @@ class DoctorDashboardService {
                 form.reset();
             }
         } catch (error) {
+            console.error('[DoctorDashboard] Error submitting prescription:', error);
             this.showError(error.message || 'Failed to add prescription');
         } finally {
             this.hideLoading();
