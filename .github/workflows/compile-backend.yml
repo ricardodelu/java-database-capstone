@@ -16,5 +16,5 @@ jobs:
           java-version: '21'
 
       - name: Compile with Maven
-        working-directory: backend
+        working-directory: app
         run: mvn clean compile
