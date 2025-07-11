@@ -46,14 +46,13 @@
                                 <th>Name</th>
                                 <th>Phone</th>
                                 <th>Email</th>
-                                <th>Prescription</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="patientTableBody">
                             <!-- Patient rows will be populated dynamically -->
                             <tr class="loading-row">
-                                <td colspan="6" class="loading">Loading patient records...</td>
+                                <td colspan="5" class="loading">Loading patient records...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -143,7 +142,7 @@
     <!-- Prescription Modal -->
     <div id="prescriptionModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <span class="close-modal">&times;</span>
             <h2>Add Prescription</h2>
             <form id="prescriptionForm" class="prescription-form">
                 <input type="hidden" id="prescriptionPatientId" name="patientId">

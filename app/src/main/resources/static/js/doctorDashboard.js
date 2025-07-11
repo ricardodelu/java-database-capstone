@@ -1,6 +1,7 @@
 // Doctor Dashboard Service - Modern implementation with JWT authentication
 import { authService } from './services/authService.js';
 import { apiService } from './services/apiService.js';
+import { prescriptionService } from './services/prescriptionServices.js';
 
 class DoctorDashboardService {
     static instance = null;
@@ -195,7 +196,7 @@ class DoctorDashboardService {
         tbody.innerHTML = '';
         
         if (!patientsToRender.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="noPatientRecord">No patient records found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="noPatientRecord">No patient records found.</td></tr>';
             return;
         }
         
@@ -208,37 +209,29 @@ class DoctorDashboardService {
     createPatientRow(patient) {
         const row = document.createElement('tr');
         
-        // Get patient's prescriptions
-        const prescriptions = this.getPatientPrescriptions(patient.id);
-        const prescriptionText = prescriptions.length > 0 
-            ? `${prescriptions.length} prescription(s)` 
-            : 'No prescriptions';
-        
         row.innerHTML = `
             <td data-label="Patient ID">${patient.id}</td>
             <td data-label="Name">${patient.name}</td>
             <td data-label="Phone">${patient.phoneNumber || 'N/A'}</td>
             <td data-label="Email">${patient.email || 'N/A'}</td>
-            <td data-label="Prescription">${prescriptionText}</td>
             <td data-label="Actions">
                 <div class="action-buttons">
-                    <button class="action-btn btn-view view-btn" data-id="${patient.id}">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="action-btn btn-edit edit-btn" data-id="${patient.id}">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="prescription-btn prescription-btn" data-id="${patient.id}">
+                    <button class="prescription-btn" data-id="${patient.id}">
                         <i class="fas fa-pills"></i> Add Prescription
                     </button>
                 </div>
             </td>
         `;
         
-        // Add event listeners
-        row.querySelector('.view-btn').addEventListener('click', () => this.viewPatient(patient));
-        row.querySelector('.edit-btn').addEventListener('click', () => this.openModalForEditPatient(patient));
-        row.querySelector('.prescription-btn').addEventListener('click', () => this.openModalForAddPrescription(patient));
+        // Add event listener for prescription button
+        const prescriptionBtn = row.querySelector('.prescription-btn');
+        if (prescriptionBtn) {
+            prescriptionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.openModalForAddPrescription(patient);
+            });
+        }
         
         return row;
     }
@@ -256,8 +249,35 @@ class DoctorDashboardService {
     }
 
     setupModalListeners() {
-        // Add modal open/close, form submit, and validation logic for all modals
-        // For brevity, not fully implemented here
+        // Modal open/close logic for prescription modal
+        const prescriptionModal = document.getElementById('prescriptionModal');
+        const prescriptionForm = document.getElementById('prescriptionForm');
+        // Close modal on close or cancel
+        const closeButtons = document.querySelectorAll('.close-modal, .cancel-btn');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                if (prescriptionModal) {
+                    prescriptionModal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+        // Close modal when clicking outside
+        if (prescriptionModal) {
+            prescriptionModal.addEventListener('click', (e) => {
+                if (e.target === prescriptionModal) {
+                    prescriptionModal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            });
+        }
+        // Handle prescription form submission
+        if (prescriptionForm) {
+            prescriptionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handlePrescriptionSubmit(e);
+            });
+        }
     }
 
     viewPatient(patient) {
@@ -273,9 +293,17 @@ class DoctorDashboardService {
     }
 
     openModalForAddPrescription(patient) {
-        // Open add prescription modal and set patient
-        console.log('Adding prescription for patient:', patient);
-        this.showSuccess(`Adding prescription for: ${patient.name}`);
+        // Set the patient ID in the hidden field
+        const patientIdField = document.getElementById('prescriptionPatientId');
+        if (patientIdField) {
+            patientIdField.value = patient.id;
+        }
+        // Show the prescription modal
+        const modal = document.getElementById('prescriptionModal');
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     showLoading() {
@@ -307,6 +335,38 @@ class DoctorDashboardService {
             setTimeout(() => {
                 this.elements.toast.classList.remove('show');
             }, 3000);
+        }
+    }
+
+    async handlePrescriptionSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const prescriptionData = Object.fromEntries(formData.entries());
+        try {
+            this.showLoading();
+            // Note: Doctor ID is handled by the backend based on the authenticated user
+            // Add prescription date if not provided
+            if (!prescriptionData.prescriptionDate) {
+                prescriptionData.prescriptionDate = new Date().toISOString().split('T')[0];
+            }
+            // Use prescription service to save prescription
+            const response = await prescriptionService.addPrescription(prescriptionData);
+            if (response) {
+                this.showSuccess('Prescription added successfully');
+                // Close modal
+                const modal = document.getElementById('prescriptionModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+                // Reset form
+                form.reset();
+            }
+        } catch (error) {
+            this.showError(error.message || 'Failed to add prescription');
+        } finally {
+            this.hideLoading();
         }
     }
 }

@@ -73,7 +73,8 @@ public class SecurityConfig {
                     "/assets/**",
                     "/fonts/**",
                     "/webjars/**",
-                    "/favicon.ico"
+                    "/favicon.ico",
+                    "/test-prescription.html"
                 ).permitAll()
                 
                 // Admin endpoints - allow access to HTML templates, but protect API endpoints
