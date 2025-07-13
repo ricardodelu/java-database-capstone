@@ -4,14 +4,31 @@
  * with role-based actions
  */
 
-export function createDoctorCard(doctor) {
+export async function createDoctorCard(doctor, onBookNow) {
     // Create card container
     const card = document.createElement('div');
     card.className = 'doctor-card';
     
-    // Get user role from localStorage
-    const role = localStorage.getItem('userRole');
-    const token = localStorage.getItem('token');
+    // Get user authentication info from authService
+    let isAuthenticated = false;
+    let isAdmin = false;
+    let isPatient = false;
+    
+    try {
+        const { authService } = await import('../services/authService.js');
+        isAuthenticated = authService.isAuthenticated();
+        isAdmin = authService.isAdmin();
+        isPatient = isAuthenticated && !isAdmin; // If authenticated and not admin, assume patient
+        
+        console.log('Doctor card auth check:', {
+            isAuthenticated,
+            isAdmin,
+            isPatient,
+            user: authService.getCurrentUser()
+        });
+    } catch (err) {
+        console.error('Error checking auth in doctor card:', err);
+    }
 
     // Create doctor info section
     const infoDiv = document.createElement('div');
@@ -51,7 +68,7 @@ export function createDoctorCard(doctor) {
     actionsDiv.className = 'card-actions';
     
     // Add role-specific buttons
-    if (role === 'admin') {
+    if (isAdmin) {
         // Delete button for admin
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-danger';
@@ -62,6 +79,8 @@ export function createDoctorCard(doctor) {
                 try {
                     // Import the deleteDoctor function from doctorServices
                     const { deleteDoctor } = await import('../services/doctorServices.js');
+                    const { authService } = await import('../services/authService.js');
+                    const token = authService.getToken();
                     await deleteDoctor(doctor.id, token);
                     card.dispatchEvent(new CustomEvent('doctorDeleted', {
                         bubbles: true,
@@ -88,39 +107,33 @@ export function createDoctorCard(doctor) {
         });
         actionsDiv.appendChild(editBtn);
         
-    } else if (role === 'patient') {
-        // Book Now button for non-logged in patients
+    } else if (isPatient) {
+        // Book Now button for logged-in patients
         const bookBtn = document.createElement('button');
-        bookBtn.className = 'btn btn-primary';
+        bookBtn.className = 'btn btn-book';
         bookBtn.textContent = 'Book Now';
         bookBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            alert('Please log in to book an appointment.');
-            // Optionally trigger login modal
-            const event = new CustomEvent('showLogin', { bubbles: true });
-            document.dispatchEvent(event);
+            if (typeof onBookNow === 'function') {
+                onBookNow(doctor, e);
+            } else {
+                alert('Booking is not available.');
+            }
         });
         actionsDiv.appendChild(bookBtn);
-        
-    } else if (role === 'loggedPatient') {
-        // Book Now button for logged-in patients
+    } else {
+        // Book Now button for anonymous users
         const bookBtn = document.createElement('button');
-        bookBtn.className = 'btn btn-primary';
+        bookBtn.className = 'btn btn-book';
         bookBtn.textContent = 'Book Now';
-        bookBtn.addEventListener('click', async (e) => {
+        bookBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            try {
-                // Import required services
-                const { getPatientData } = await import('../services/patientServices.js');
-                const { showBookingOverlay } = await import('../services/bookingService.js');
-                
-                // Get patient data and show booking overlay
-                const patientData = await getPatientData(token);
-                showBookingOverlay(e, doctor, patientData);
-                
-            } catch (error) {
-                console.error('Error initiating booking:', error);
-                alert('Failed to initiate booking. Please try again.');
+            if (typeof onBookNow === 'function') {
+                onBookNow(doctor, e);
+            } else {
+                alert('Please log in to book an appointment.');
+                const event = new CustomEvent('showLogin', { bubbles: true });
+                document.dispatchEvent(event);
             }
         });
         actionsDiv.appendChild(bookBtn);

@@ -14,12 +14,12 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     
     <!-- JS links for utility with defer -->
-    <script src="/js/util.js" defer></script>
-    <script src="/js/render.js" defer></script>
+    <script type="module" src="/js/util.js" defer></script>
+    <script type="module" src="/js/render.js" defer></script>
     
     <!-- JS links for components -->
-    <script src="/js/components/header.js" defer></script>
-    <script src="/js/components/footer.js" defer></script>
+    <script type="module" src="/js/components/header.js" defer></script>
+    <script type="module" src="/js/components/footer.js" defer></script>
 </head>
 <body>
     <div class="container">
@@ -31,15 +31,15 @@
             <main class="main-content">
                 <h2>Select Your Role</h2>
                 <div class="role-buttons">
-                    <button id="adminBtn" class="role-btn" onclick="selectRole('admin')">
+                    <button id="adminBtn" class="role-btn">
                         <i class="fas fa-user-shield"></i>
                         <span>Administrator</span>
                     </button>
-                    <button id="doctorBtn" class="role-btn" onclick="selectRole('doctor')">
+                    <button id="doctorBtn" class="role-btn">
                         <i class="fas fa-user-md"></i>
                         <span>Doctor</span>
                     </button>
-                    <button id="patientBtn" class="role-btn" onclick="selectRole('patient')">
+                    <button id="patientBtn" class="role-btn">
                         <i class="fas fa-user"></i>
                         <span>Patient</span>
                     </button>
@@ -61,6 +61,32 @@
         </div>
     </div>
 
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" id="closeLoginModal">&times;</span>
+            <div class="modal-header">
+                <h2 id="loginModalTitle">Login</h2>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div id="loginError" class="error-message" style="display: none;"></div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Global functions -->
     <script>
         // Global functions
@@ -77,8 +103,122 @@
             // Store the selected role in localStorage as per requirements
             localStorage.setItem('selectedRole', role);
             
-            // Navigate to login page with role parameter
-            window.location.href = `/login.html?role=${role}`;
+            // New logic: patient goes to dashboard, others open login modal
+            if (role === 'patient') {
+                window.location.href = '/pages/patientDashboard.html';
+            } else {
+                // Open login modal for doctor/admin
+                openLoginModal(role);
+            }
+        }
+        
+        // Function to open login modal with role context
+        function openLoginModal(role) {
+            const loginModal = document.getElementById('loginModal');
+            const loginModalTitle = document.getElementById('loginModalTitle');
+            const loginForm = document.getElementById('loginForm');
+            const closeLoginModal = document.getElementById('closeLoginModal');
+            
+            // Set modal title based on role
+            loginModalTitle.textContent = `${role.charAt(0).toUpperCase() + role.slice(1)} Login`;
+            
+            // Store the target role for post-login redirect
+            loginForm.dataset.targetRole = role;
+            
+            // Show the modal
+            loginModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Focus on username field
+            setTimeout(() => {
+                document.getElementById('username').focus();
+            }, 100);
+            
+            // Close modal event listeners
+            const closeModal = () => {
+                loginModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+                // Clear form
+                loginForm.reset();
+                const errorElement = document.getElementById('loginError');
+                if (errorElement) {
+                    errorElement.style.display = 'none';
+                }
+            };
+            
+            closeLoginModal.onclick = closeModal;
+            
+            // Close modal when clicking outside
+            loginModal.onclick = (e) => {
+                if (e.target === loginModal) {
+                    closeModal();
+                }
+            };
+            
+            // Handle form submission
+            loginForm.onsubmit = async (e) => {
+                e.preventDefault();
+                
+                const submitBtn = loginForm.querySelector('button[type="submit"]');
+                const errorElement = document.getElementById('loginError');
+                
+                // Disable form and show loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                errorElement.style.display = 'none';
+                
+                const formData = new FormData(loginForm);
+                const username = formData.get('username');
+                const password = formData.get('password');
+                const targetRole = loginForm.dataset.targetRole;
+                
+                try {
+                    const response = await fetch('/api/auth/signin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        // Store auth data using authService
+                        const { authService } = await import('/js/services/authService.js');
+                        const authStored = authService.setAuth(result.token, {
+                            username: result.username,
+                            roles: result.roles || []
+                        });
+                        
+                        if (!authStored) {
+                            throw new Error('Failed to store authentication data');
+                        }
+                        
+                        // Close modal
+                        closeModal();
+                        
+                        // Redirect based on role
+                        if (targetRole === 'admin') {
+                            window.location.href = '/admin/dashboard';
+                        } else if (targetRole === 'doctor') {
+                            window.location.href = '/doctor/dashboard';
+                        }
+                    } else {
+                        // Show error
+                        errorElement.textContent = result.error || 'Login failed. Please try again.';
+                        errorElement.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorElement.textContent = 'Network error. Please try again.';
+                    errorElement.style.display = 'block';
+                } finally {
+                    // Re-enable form
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                }
+            };
         }
         
         // Initialize role buttons and load header/footer
@@ -108,7 +248,7 @@
         });
     </script>
     
-    <!-- Service for role selection and modal behavior -->
-    <script type="module" src="/js/services/index.js" defer></script>
+    <!-- Service for role selection and modal behavior - DISABLED -->
+    <!-- <script type="module" src="/js/services/index.js" defer></script> -->
 </body>
 </html>

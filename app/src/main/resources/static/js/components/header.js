@@ -9,7 +9,7 @@ class Header {
         this.headerElement = null;
     }
 
-    async render(pageTitle = 'Clinic Management System', showLogout = false) {
+    async render(pageTitle = 'Clinic Management System', showLogout = false, showLogin = false) {
         const headerHtml = `
             <header class="modern-header">
                 <div class="header-container">
@@ -21,6 +21,12 @@ class Header {
                         <h1 class="page-title">${pageTitle}</h1>
                     </div>
                     <div class="header-right">
+                        ${showLogin ? `
+                            <button id="loginBtn" class="logout-btn">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span>Login</span>
+                            </button>
+                        ` : ''}
                         ${showLogout ? `
                             <button id="logoutBtn" class="logout-btn">
                                 <i class="fas fa-sign-out-alt"></i>
@@ -31,28 +37,31 @@ class Header {
                 </div>
             </header>
         `;
-
         return headerHtml;
     }
 
-    async mount(containerId = 'header', pageTitle = 'Clinic Management System', showLogout = false) {
+    async mount(containerId = 'header', pageTitle = 'Clinic Management System', showLogout = false, showLogin = false) {
+        console.log('Header mount called with:', { containerId, pageTitle, showLogout, showLogin });
         const container = document.getElementById(containerId);
         if (!container) {
             console.error(`Header container with id '${containerId}' not found`);
             return;
         }
-
-        const headerHtml = await this.render(pageTitle, showLogout);
+        console.log('Header container found:', container);
+        const headerHtml = await this.render(pageTitle, showLogout, showLogin);
+        console.log('Header HTML generated, length:', headerHtml.length);
         container.innerHTML = headerHtml;
         this.headerElement = container;
-
-        // Add logout functionality if needed
         if (showLogout) {
+            console.log('Setting up logout...');
             this.setupLogout();
         }
-
-        // Add CSS if not already present
+        if (showLogin) {
+            console.log('Setting up login...');
+            this.setupLogin();
+        }
         this.addStyles();
+        console.log('Header mount completed');
     }
 
     setupLogout() {
@@ -73,6 +82,35 @@ class Header {
         
         // Redirect to main page
         window.location.href = '/';
+    }
+
+    setupLogin() {
+        console.log('Setting up login button...');
+        const loginBtn = document.getElementById('loginBtn');
+        console.log('Login button element:', loginBtn);
+        if (loginBtn) {
+            console.log('Adding click event listener to login button');
+            loginBtn.addEventListener('click', () => {
+                console.log('Login button clicked!');
+                
+                // Try to call openLoginModal directly first
+                if (typeof openLoginModal === 'function') {
+                    console.log('Calling openLoginModal directly...');
+                    openLoginModal();
+                    return;
+                }
+                
+                // Fallback to event dispatch
+                console.log('openLoginModal not found, dispatching event...');
+                const event = new Event('showLogin');
+                console.log('Dispatching showLogin event:', event);
+                window.dispatchEvent(event);
+                console.log('showLogin event dispatched');
+            });
+            console.log('Login button event listener added successfully');
+        } else {
+            console.error('Login button not found in DOM');
+        }
     }
 
     addStyles() {
@@ -206,19 +244,19 @@ if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
         const headerContainer = document.getElementById('header');
         if (headerContainer) {
-            // Check if we're on a dashboard page (show logout)
             const isDashboard = window.location.pathname.includes('/dashboard') || 
                               window.location.pathname.includes('/admin') ||
                               window.location.pathname.includes('/doctor') ||
                               window.location.pathname.includes('/patient');
-            
+            const isPatientDashboard = window.location.pathname.includes('/patientDashboard') || window.location.pathname.includes('/pages/patientDashboard.html');
             const pageTitle = isDashboard ? 
                 (window.location.pathname.includes('/admin') ? 'Admin Dashboard' :
                  window.location.pathname.includes('/doctor') ? 'Doctor Dashboard' :
                  window.location.pathname.includes('/patient') ? 'Patient Dashboard' : 'Dashboard') :
                 'Clinic Management System';
-            
-            header.mount('header', pageTitle, isDashboard);
+            const token = localStorage.getItem('token');
+            const showLogin = isPatientDashboard && !token;
+            header.mount('header', pageTitle, isDashboard && !!token, showLogin);
         }
     });
 }

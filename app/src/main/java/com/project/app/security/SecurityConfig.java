@@ -74,7 +74,10 @@ public class SecurityConfig {
                     "/fonts/**",
                     "/webjars/**",
                     "/favicon.ico",
-                    "/test-prescription.html"
+                    "/test-prescription.html",
+                    "/pages/patientDashboard.html",
+                    "/patientDashboard.html",
+                    "/api/doctors/**"
                 ).permitAll()
                 
                 // Admin endpoints - allow access to HTML templates, but protect API endpoints
@@ -114,9 +117,6 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/doctor/dashboard"
                 ).permitAll()
-                .requestMatchers(
-                    "/api/doctors/**"
-                ).hasRole("DOCTOR")
                 // Role-based access control for dashboards (consolidated with above)
                 .requestMatchers("/patient/dashboard").hasRole("PATIENT")
                 // All other requests require authentication

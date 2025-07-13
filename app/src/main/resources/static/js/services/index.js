@@ -20,8 +20,17 @@ class LoginHandler {
     }
 
     handleRoleSelection(role) {
-        // Redirect to the login page with the selected role
-        window.location.href = `/login.html?role=${role}`;
+        // Use the global selectRole function for consistent behavior
+        if (typeof selectRole === 'function') {
+            selectRole(role);
+        } else {
+            // Fallback: Redirect to the login page with the selected role, except patient goes to dashboard
+            if (role === 'patient') {
+                window.location.href = '/pages/patientDashboard.html';
+            } else {
+                window.location.href = `/login.html?role=${role}`;
+            }
+        }
     }
 
     async handleLoginSubmit(event) {

@@ -19,9 +19,27 @@ public class DoctorController {
     private DoctorService doctorService;
 
     @GetMapping
-    public ResponseEntity<?> getAllDoctors() {
+    public ResponseEntity<?> getAllDoctors(
+            @RequestParam(required = false) String specialty,
+            @RequestParam(required = false) String time) {
         try {
             List<DoctorDTO> doctors = doctorService.getAllDoctorsAsDTOs();
+            
+            // Apply filters if provided
+            if (specialty != null && !specialty.isEmpty()) {
+                doctors = doctors.stream()
+                    .filter(doctor -> specialty.equalsIgnoreCase(doctor.getSpecialty()))
+                    .collect(java.util.stream.Collectors.toList());
+            }
+            
+            if (time != null && !time.isEmpty()) {
+                doctors = doctors.stream()
+                    .filter(doctor -> doctor.getAvailableTimes() != null && 
+                        doctor.getAvailableTimes().stream()
+                            .anyMatch(slot -> slot.toUpperCase().contains(time.toUpperCase())))
+                    .collect(java.util.stream.Collectors.toList());
+            }
+            
             return ResponseEntity.ok(Map.of("doctors", doctors));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
