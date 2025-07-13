@@ -87,4 +87,21 @@ public class PrescriptionService {
             ));
         }
     }
+
+    public ResponseEntity<?> getPrescriptionByAppointmentId(Long appointmentId) {
+        try {
+            Optional<Prescription> prescription = prescriptionRepo.findFirstByAppointmentId(appointmentId);
+            if (prescription.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "No prescription found for appointment ID: " + appointmentId));
+            }
+
+            return ResponseEntity.ok(prescription.get());
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Failed to fetch prescription: " + e.getMessage()
+            ));
+        }
+    }
 }

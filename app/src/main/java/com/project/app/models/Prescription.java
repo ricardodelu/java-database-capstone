@@ -26,6 +26,9 @@ public class Prescription {
     @NotNull(message = "Doctor ID cannot be null")
     private Long doctorId;
 
+    @NotNull(message = "Appointment ID cannot be null")
+    private Long appointmentId;
+
     @NotNull(message = "Medication cannot be null")
     @Size(min = 3, max = 500, message = "Medication must be between 3 and 500 characters")
     private String medication;

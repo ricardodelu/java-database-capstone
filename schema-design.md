@@ -49,7 +49,7 @@ Represents an appointment scheduled between a doctor and a patient.
 | `status`            | VARCHAR(255)|                                           | The status of the appointment (e.g., `SCHEDULED`).|
 
 ### Table: `admin`
-Represents an administrator in the system. Note: This table exists in `data.sql` but does not have a corresponding Java model in the core application.
+Represents an administrator in the system.
 
 | Column Name     | Data Type      | Constraints                | Description                  |
 |-----------------|---------------|----------------------------|------------------------------|

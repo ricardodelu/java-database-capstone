@@ -20,7 +20,10 @@ import com.project.app.models.Prescription;
 import com.project.app.models.Admin;
 import com.project.app.dtos.DoctorDTO;
 import com.project.app.utils.PasswordHasher;
+import com.project.app.security.JwtTokenProvider;
+import com.project.app.security.CustomUserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -54,6 +57,12 @@ public class AppService {
 
     @Autowired
     private PrescriptionRepo prescriptionRepo;   
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
 
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -231,6 +240,39 @@ public class AppService {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Validate JWT token and check if it belongs to a doctor
+     * @param token The JWT token to validate
+     * @return true if token is valid and belongs to a doctor, false otherwise
+     */
+    public boolean validateToken(String token) {
+        try {
+            // Validate the JWT token
+            if (!jwtTokenProvider.validateToken(token)) {
+                return false;
+            }
+
+            // Get username from token
+            String username = jwtTokenProvider.getUsernameFromJWT(token);
+            if (username == null) {
+                return false;
+            }
+
+            // Load user details
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (userDetails == null) {
+                return false;
+            }
+
+            // Check if user has DOCTOR role
+            return userDetails.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCTOR"));
+
+        } catch (Exception e) {
+            return false;
         }
     }
 }
